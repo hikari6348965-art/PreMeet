@@ -482,7 +482,9 @@ async def email_brief(brief_id: str, user=Depends(authmod.get_current_user)):
     b = await db.briefs.find_one({"id": brief_id, "user_id": user["id"]}, {"_id": 0})
     if not b:
         raise HTTPException(status_code=404, detail="Brief not found")
-    if b.get("emailed_at") and b["emailed_at"] > (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat():
+    if b.get("email_status") == "sending":
+        raise HTTPException(status_code=409, detail="The email is already on its way.")
+    if b.get("email_status") == "sent" and b.get("emailed_at") and b["emailed_at"] > (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat():
         raise HTTPException(status_code=429, detail="Please wait a minute before sending again.")
     meeting = await db.meetings.find_one({"id": b["meeting_id"], "user_id": user["id"]}, {"_id": 0})
     await email_service.send_brief_ready(user, meeting, b)

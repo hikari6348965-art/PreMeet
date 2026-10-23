@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { toast } from "sonner";
 import { Mail, MailCheck, MailWarning, Loader2 } from "lucide-react";
@@ -6,6 +6,13 @@ import { Mail, MailCheck, MailWarning, Loader2 } from "lucide-react";
 export function EmailChip({ brief, onSent }) {
   const [busy, setBusy] = useState(false);
   const status = brief.email_status;
+
+  useEffect(() => {
+    if (status !== "sending") return;
+    let n = 0;
+    const t = setInterval(() => { n += 1; if (n > 12) clearInterval(t); else onSent(); }, 2500);
+    return () => clearInterval(t);
+  }, [status, onSent]);
 
   const send = async () => {
     setBusy(true);
@@ -28,7 +35,7 @@ export function EmailChip({ brief, onSent }) {
           <Icon className="h-3.5 w-3.5" /> {label}
         </span>
       )}
-      <button onClick={send} disabled={busy} data-testid="email-brief-button"
+      <button onClick={send} disabled={busy || status === "sending"} data-testid="email-brief-button"
         className="h-9 px-3 rounded-lg border border-border text-sm font-medium flex items-center gap-1.5 hover:border-primary/40 transition-colors disabled:opacity-60">
         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />} {status === "sent" ? "Email again" : "Email me"}
       </button>

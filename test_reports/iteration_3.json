@@ -1,0 +1,31 @@
+{
+  "summary": "Tested Brief Ready Emails (Emergent Managed Email). Backend: 7/7 new tests pass (auto email sending->sent after generate, opt-out = no email_status, manual POST /briefs/{id}/email 200/404/401/429, render_brief_ready HTML content + safety check). Full regression 35/35 pytest pass. Frontend: BriefViewer chip + Email button, rate-limit toast, success toast, Settings toggle persistence all work. One UX gap: the chip stays 'Sending…' until page reload.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/briefs/{id}/email", "issue": "Rate limit uses emailed_at, which is only set after a send finishes. While the auto-send is still 'sending', a manual request is not blocked, so the user can get two emails. A failed send also sets emailed_at, so the user can't retry for 60s after a failure."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "EmailChip/BriefViewer", "issue": "After the brief is generated, the chip shows 'Sending…' and never changes. Nothing polls or reloads it. The backend had already moved to 'sent' within seconds, and the chip only showed 'Emailed' after a manual page reload. While it says 'Sending…', the button still reads 'Email me' and can be clicked.", "selector": "[data-testid='brief-email-status']", "priority": "MEDIUM"}
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": ["/app/backend/tests/test_brief_emails.py", "/app/backend/tests/setup_email_ui_user.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "BriefViewer: while brief.email_status === 'sending', reload the meeting every 2-3s until the status changes (stop after about 30s). Disable the email button during this time.",
+    "email_brief: return 429 (or 409) while email_status is 'sending'. Consider not applying the 60s limit after a 'failed' send."
+  ],
+  "critical_code_review_comments": [
+    "Rate-limit check compares ISO strings. It works because both use UTC isoformat, but this is fragile.",
+    "email_brief returns 503 for every non-sent status. This is fine, but the reason is only logged."
+  ],
+  "updated_files": ["/app/backend/tests/test_brief_emails.py", "/app/backend/tests/setup_email_ui_user.py"],
+  "success_rate": {"backend": "100%", "frontend": "90%"},
+  "seed_data_creation": "Created test_bemail_* users and the test_* users from the regression run. All test_* users and their data were deleted afterwards.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "test_brief_emails.py does 2 LLM generations and sleeps 62s to get past the rate limit (about 95s total). The UI flow injects localStorage bc_token. The Settings email toggle is a checkbox input, and changes persist only after clicking settings-save-btn. The real-delivery check with delivered@resend.dev was not done; sends to example.com addresses got 200 from the proxy."
+}
