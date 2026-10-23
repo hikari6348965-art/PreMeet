@@ -4,6 +4,7 @@ import { api, formatApiErrorDetail } from "../lib/api";
 import { Card, StatusBadge, formatDateTime, meetingTypeLabel } from "../components/ui-helpers";
 import BriefContent from "../components/BriefContent";
 import { UpgradeDialog } from "../components/UpgradeDialog";
+import { EmailChip } from "../components/EmailChip";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Printer, Copy, Users, Building2, FileText,
@@ -115,6 +116,7 @@ export default function BriefViewer() {
                   <button onClick={deleteBrief} data-testid="delete-brief-button" className="h-9 px-3 rounded-lg border border-border text-sm font-medium flex items-center gap-1.5 text-destructive hover:border-destructive/40 transition">
                     <Trash2 className="h-4 w-4" /> Delete
                   </button>
+                  <EmailChip brief={brief} onSent={load} />
                 </div>
                 <BriefContent brief={brief} onUpdate={(b) => setData({ ...data, brief: b })} />
               </>

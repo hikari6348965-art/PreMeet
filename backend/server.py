@@ -24,6 +24,10 @@ import auth as authmod
 import brief_service
 import billing
 import seed
+import email_service
+import asyncio
+
+_bg_tasks = set()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -464,7 +468,28 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
     await db.usage_records.update_one({"user_id": uid, "period": current_period()},
                                       {"$inc": {"briefs_generated": 1}, "$set": {"updated_at": now_iso()}})
     await audit(uid, "brief_generated", meeting.get("title"))
+    if pref.get("email_notifications", True):
+        brief_doc["email_status"] = "sending"
+        await db.briefs.update_one({"id": brief_doc["id"]}, {"$set": {"email_status": "sending"}})
+        task = asyncio.create_task(email_service.send_brief_ready(user, clean(meeting), dict(brief_doc)))
+        _bg_tasks.add(task)
+        task.add_done_callback(_bg_tasks.discard)
     return clean(brief_doc)
+
+
+@api.post("/briefs/{brief_id}/email")
+async def email_brief(brief_id: str, user=Depends(authmod.get_current_user)):
+    b = await db.briefs.find_one({"id": brief_id, "user_id": user["id"]}, {"_id": 0})
+    if not b:
+        raise HTTPException(status_code=404, detail="Brief not found")
+    if b.get("emailed_at") and b["emailed_at"] > (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat():
+        raise HTTPException(status_code=429, detail="Please wait a minute before sending again.")
+    meeting = await db.meetings.find_one({"id": b["meeting_id"], "user_id": user["id"]}, {"_id": 0})
+    await email_service.send_brief_ready(user, meeting, b)
+    status = (await db.briefs.find_one({"id": brief_id}, {"email_status": 1}))["email_status"]
+    if status != "sent":
+        raise HTTPException(status_code=503, detail="Email is temporarily unavailable. Please try again later.")
+    return {"ok": True, "email_status": status}
 
 
 @api.get("/briefs")
