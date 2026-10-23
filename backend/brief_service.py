@@ -12,7 +12,7 @@ BRIEF_SECTIONS = [
     "risks_and_opportunities", "recommended_next_actions", "missing_information",
 ]
 
-SYSTEM_PROMPT = """You are an expert meeting-preparation analyst for "BriefCraft AI".
+SYSTEM_PROMPT = """You are an expert meeting-preparation analyst for "PreMeet".
 You produce concise, trustworthy, source-grounded one-page meeting briefs for consultants, account executives, freelancers and recruiters.
 
 CRITICAL RULES:

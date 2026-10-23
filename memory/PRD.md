@@ -1,4 +1,4 @@
-# BriefCraft AI — AI Meeting Brief Generator (PRD)
+# PreMeet — AI Meeting Brief Generator (PRD)
 
 ## Original problem statement
 SaaS that prepares users for meetings by collecting context (calendar, CRM, notes, email) and generating a one-page personalized meeting brief.

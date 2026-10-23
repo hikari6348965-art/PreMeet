@@ -22,7 +22,7 @@ export async function startCheckout(planId) {
       amount: data.amount,
       currency: "INR",
       order_id: data.order.id,
-      name: "BriefCraft AI",
+      name: "PreMeet",
       description: `${planId} plan — 30 days`,
       prefill: { name: data.user_name, email: data.user_email },
       theme: { color: "#0284c7" },

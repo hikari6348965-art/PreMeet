@@ -58,7 +58,7 @@ export default function Onboarding() {
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
             <FileText className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-bold text-lg tracking-tight">BriefCraft AI</span>
+          <span className="font-bold text-lg tracking-tight">PreMeet</span>
         </div>
       </div>
 
@@ -167,7 +167,7 @@ export default function Onboarding() {
             ) : (
               <button onClick={finish} disabled={loading} data-testid="onboarding-finish-button"
                 className="h-11 px-6 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-60">
-                {loading && <Loader2 className="h-4 w-4 animate-spin" />} Enter BriefCraft <ArrowRight className="h-4 w-4" />
+                {loading && <Loader2 className="h-4 w-4 animate-spin" />} Enter PreMeet <ArrowRight className="h-4 w-4" />
               </button>
             )}
           </div>

@@ -25,7 +25,7 @@ export default function GuestJoin() {
     <div className="min-h-screen bg-ink text-white flex flex-col" data-testid="guest-join-page">
       <header className="px-6 h-16 flex items-center gap-2 border-b border-white/10">
         <div className="h-8 w-8 rounded-lg bg-signal text-ink flex items-center justify-center"><FileText className="h-4 w-4" /></div>
-        <span className="font-display font-bold text-lg">BriefCraft</span>
+        <span className="font-display font-bold text-lg">PreMeet</span>
         {room && <span className="ml-3 text-sm text-white/60 truncate">{room.title}</span>}
       </header>
       {room && !left ? (
@@ -38,7 +38,7 @@ export default function GuestJoin() {
             <form onSubmit={join} className="w-full max-w-sm bc-rise">
               <Video className="h-8 w-8 text-signal" />
               <h1 className="mt-4 text-3xl font-bold">Join the call</h1>
-              <p className="mt-2 text-white/60 text-sm">You're joining a video call hosted on BriefCraft. The host may take notes from this call.</p>
+              <p className="mt-2 text-white/60 text-sm">You're joining a video call hosted on PreMeet. The host may take notes from this call.</p>
               <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={60} placeholder="Your name"
                 data-testid="guest-name-input"
                 className="mt-6 w-full h-11 rounded-lg bg-white/5 border border-white/15 px-3 text-sm placeholder:text-white/40 focus:outline-none focus:border-signal" />

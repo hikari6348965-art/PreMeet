@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { formatApiErrorDetail } from "../lib/api";
 import { FileText, Loader2, CheckCircle2 } from "lucide-react";
+import { GoogleButton, OrDivider } from "../components/GoogleButton";
 
 export default function Register() {
   const { register } = useAuth();
@@ -32,7 +33,7 @@ export default function Register() {
           <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
             <FileText className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-xl tracking-tight">BriefCraft AI</span>
+          <span className="font-bold text-xl tracking-tight">PreMeet</span>
         </Link>
         <div className="relative space-y-6">
           <h2 className="text-4xl font-extrabold tracking-tight leading-tight">
@@ -49,7 +50,7 @@ export default function Register() {
             ))}
           </ul>
         </div>
-        <p className="relative text-xs text-slate-500 font-mono-label">© BriefCraft AI</p>
+        <p className="relative text-xs text-slate-500 font-mono-label">© PreMeet</p>
       </div>
 
       <div className="flex items-center justify-center p-6 sm:p-12">
@@ -58,11 +59,13 @@ export default function Register() {
             <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
               <FileText className="h-4 w-4 text-white" />
             </div>
-            <span className="font-bold text-lg tracking-tight">BriefCraft AI</span>
+            <span className="font-bold text-lg tracking-tight">PreMeet</span>
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
           <p className="text-muted-foreground mt-1 mb-6 text-sm">Get your first brief in minutes.</p>
 
+          <GoogleButton label="Sign up with Google" testid="google-signup-btn" />
+          <OrDivider />
           <form onSubmit={submit} className="space-y-4" data-testid="register-form">
             <div>
               <label className="text-sm font-medium">Full name</label>

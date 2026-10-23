@@ -8,6 +8,8 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 from fastapi import FastAPI, APIRouter, Request, Response, HTTPException, Depends, UploadFile, File
+from pydantic import BaseModel
+import httpx
 from starlette.middleware.cors import CORSMiddleware
 from bson import ObjectId
 import secrets as pysecrets
@@ -34,7 +36,7 @@ _bg_tasks = set()
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="BriefCraft AI")
+app = FastAPI(title="PreMeet")
 api = APIRouter(prefix="/api")
 
 
@@ -107,6 +109,40 @@ async def register(payload: RegisterInput, request: Request, response: Response)
             "onboarded": False, "token": access}
 
 
+class GoogleSessionInput(BaseModel):
+    session_id: str
+
+
+@api.post("/auth/google-session")
+async def google_session(payload: GoogleSessionInput, response: Response):
+    async with httpx.AsyncClient(timeout=15) as c:
+        r = await c.get("https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                        headers={"X-Session-ID": payload.session_id})
+    if r.status_code != 200:
+        raise HTTPException(status_code=401, detail="Google sign-in failed. Please try again.")
+    info = r.json()
+    email = (info.get("email") or "").lower()
+    if not email:
+        raise HTTPException(status_code=401, detail="Google didn't share an email address.")
+    user = await db.users.find_one({"email": email})
+    if user:
+        uid = str(user["_id"])
+        await db.users.update_one({"_id": user["_id"]}, {"$set": {"picture": info.get("picture"), "google_linked": True}})
+    else:
+        user = {"email": email, "name": info.get("name") or email.split("@")[0], "role": "user",
+                "profession": None, "onboarded": False, "picture": info.get("picture"),
+                "google_linked": True, "created_at": now_iso()}
+        uid = str((await db.users.insert_one(dict(user))).inserted_id)
+        await seed.ensure_user_subscription(uid)
+        await seed.ensure_integration_rows(uid)
+        await seed.ensure_preferences(uid)
+    access = authmod.create_access_token(uid, email)
+    authmod.set_auth_cookies(response, access, authmod.create_refresh_token(uid))
+    await audit(uid, "login_google", email)
+    return {"id": uid, "email": email, "name": user.get("name"), "role": user.get("role", "user"),
+            "onboarded": user.get("onboarded", False), "profession": user.get("profession"), "token": access}
+
+
 @api.post("/auth/login")
 async def login(payload: LoginInput, request: Request, response: Response):
     email = payload.email.lower()
@@ -114,7 +150,7 @@ async def login(payload: LoginInput, request: Request, response: Response):
     ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")
     await authmod.check_brute_force(ip, email)
     user = await db.users.find_one({"email": email})
-    if not user or not authmod.verify_password(payload.password, user["password_hash"]):
+    if not user or not user.get("password_hash") or not authmod.verify_password(payload.password, user["password_hash"]):
         await authmod.record_failed_attempt(ip, email)
         raise HTTPException(status_code=401, detail="Invalid email or password")
     await authmod.clear_attempts(ip, email)
@@ -850,7 +886,7 @@ async def startup():
     elif not authmod.verify_password(admin_password, existing["password_hash"]):
         await db.users.update_one({"email": admin_email},
                                   {"$set": {"password_hash": authmod.hash_password(admin_password)}})
-    logger.info("BriefCraft AI backend started.")
+    logger.info("PreMeet backend started.")
 
 
 @app.on_event("shutdown")

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import "@/App.css";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
 import { AuthProvider } from "./context/AuthContext";
 import { ProtectedRoute, PublicOnly } from "./components/ProtectedRoute";
@@ -19,14 +19,12 @@ import Admin from "./pages/Admin";
 import Billing from "./pages/Billing";
 import MeetingRoom from "./pages/MeetingRoom";
 import GuestJoin from "./pages/GuestJoin";
+import AuthCallback from "./pages/AuthCallback";
 
-function App() {
-  useEffect(() => { document.title = "BriefCraft AI — Walk into every meeting prepared"; }, []);
+function AppRoutes() {
+  const location = useLocation();
+  if (location.hash?.includes("session_id=")) return <AuthCallback />;
   return (
-    <div className="App">
-      <AuthProvider>
-        <BrowserRouter>
-          <Toaster position="top-right" richColors />
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/join/:meetingId" element={<GuestJoin />} />
@@ -45,6 +43,17 @@ function App() {
               <Route path="admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
             </Route>
           </Routes>
+  );
+}
+
+function App() {
+  useEffect(() => { document.title = "PreMeet — Walk into every meeting prepared"; }, []);
+  return (
+    <div className="App">
+      <AuthProvider>
+        <BrowserRouter>
+          <Toaster position="top-right" richColors />
+          <AppRoutes />
         </BrowserRouter>
       </AuthProvider>
     </div>

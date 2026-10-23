@@ -94,7 +94,7 @@ async def transcribe_recording(recording_id: str) -> str:
         return await transcribe_file(src)
 
 
-EXTRACT_PROMPT = """You extract the important details from a business meeting transcript for "BriefCraft AI".
+EXTRACT_PROMPT = """You extract the important details from a business meeting transcript for "PreMeet".
 Return ONLY valid JSON with this shape:
 {"summary": "3-5 sentence summary",
  "decisions": ["decision made"],

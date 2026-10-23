@@ -27,8 +27,8 @@ const tabContent = {
 };
 
 const faqs = [
-  { q: "How does BriefCraft avoid making things up?", a: "Every factual claim must reference a real source — a note, CRM field, calendar event or recorded commitment. When information isn't available, the brief says so explicitly instead of inventing it." },
-  { q: "Do I have to replace my CRM or calendar?", a: "No. BriefCraft brings context together from the tools you already use. Calendar and CRM connections use the official OAuth flow and request only read permissions." },
+  { q: "How does PreMeet avoid making things up?", a: "Every factual claim must reference a real source — a note, CRM field, calendar event or recorded commitment. When information isn't available, the brief says so explicitly instead of inventing it." },
+  { q: "Do I have to replace my CRM or calendar?", a: "No. PreMeet brings context together from the tools you already use. Calendar and CRM connections use the official OAuth flow and request only read permissions." },
   { q: "Is my client data private?", a: "Your data is isolated per account. We never use your meeting notes or CRM records to train models, and you control retention and deletion." },
   { q: "What happens when I hit my monthly brief limit?", a: "We stop and show a clear upgrade prompt. You're never silently charged or pushed over your plan's allowance." },
 ];
@@ -61,7 +61,7 @@ export default function Landing() {
             <div className="h-8 w-8 rounded-lg bg-ink flex items-center justify-center">
               <FileText className="h-4 w-4 text-signal" />
             </div>
-            <span className="font-bold text-lg tracking-tight">BriefCraft AI</span>
+            <span className="font-bold text-lg tracking-tight">PreMeet</span>
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition">Features</a>
@@ -90,7 +90,7 @@ export default function Landing() {
               Know the room<br />before you <span className="relative inline-block"><span className="relative z-10">walk in.</span><span className="absolute left-0 right-0 bottom-1 h-4 bg-signal -z-0" /></span>
             </h1>
             <p className="bc-rise bc-d2 mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl">
-              BriefCraft reads your calendar, inbox and notes, hands you a one-page brief with sources, runs the call, and writes up what was decided.
+              PreMeet reads your calendar, inbox and notes, hands you a one-page brief with sources, runs the call, and writes up what was decided.
             </p>
             <div className="bc-rise bc-d3 mt-8 flex flex-col sm:flex-row gap-3">
               <Link to="/register" data-testid="hero-cta-button" className="h-12 px-6 rounded-lg bg-ink text-white font-semibold flex items-center justify-center gap-2 shadow-[4px_4px_0_0_#4F46E5] hover:shadow-[6px_6px_0_0_#4F46E5] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-[transform,box-shadow] active:translate-x-0 active:translate-y-0 active:shadow-none">
@@ -319,9 +319,9 @@ export default function Landing() {
             <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
               <FileText className="h-3 w-3 text-white" />
             </div>
-            <span className="font-semibold text-foreground">BriefCraft AI</span>
+            <span className="font-semibold text-foreground">PreMeet</span>
           </div>
-          <p>© {new Date().getFullYear()} BriefCraft AI. Walk into every meeting prepared.</p>
+          <p>© {new Date().getFullYear()} PreMeet. Walk into every meeting prepared.</p>
         </div>
       </footer>
     </div>

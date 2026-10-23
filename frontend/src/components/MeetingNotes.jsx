@@ -159,7 +159,7 @@ export function MeetingNotes({ meetingId, canProcess, autoProcessKey }) {
       <div className="space-y-3">
         <p className="text-xs font-bold uppercase tracking-[0.14em] text-primary">Auto-extracted</p>
         {notes.ai ? <AiNotes ai={notes.ai} /> : !BUSY.includes(notes.status) && (
-          <p className="text-sm text-muted-foreground">After the call, BriefCraft transcribes it and pulls out the decisions, action items and key details.</p>
+          <p className="text-sm text-muted-foreground">After the call, PreMeet transcribes it and pulls out the decisions, action items and key details.</p>
         )}
         <ProcessState notes={notes} canProcess={canProcess} onProcess={process} onUpload={upload} uploading={uploading} />
       </div>

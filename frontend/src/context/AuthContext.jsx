@@ -7,6 +7,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined); // undefined = loading, null = no auth
 
   const loadUser = useCallback(async () => {
+    // Google sign-in callback exchanges session_id first (see AuthCallback)
+    if (window.location.hash?.includes("session_id=")) return;
     const token = localStorage.getItem("bc_token");
     if (!token) { setUser(null); return; }
     try {

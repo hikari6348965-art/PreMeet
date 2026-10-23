@@ -37,7 +37,7 @@ def render_notes_pdf(meeting: dict, notes: dict) -> bytes:
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=20 * mm, rightMargin=20 * mm,
                             topMargin=18 * mm, bottomMargin=18 * mm, title=f"Notes - {meeting.get('title')}")
     ai = notes.get("ai") or {}
-    flow = [Paragraph("BRIEFCRAFT AI · MEETING NOTES", st["eyebrow"]),
+    flow = [Paragraph("PREMEET · MEETING NOTES", st["eyebrow"]),
             Paragraph(escape(meeting.get("title") or "Meeting"), st["title"]),
             Paragraph(escape(" · ".join(x for x in [(meeting.get("start_time") or "")[:16].replace("T", " "),
                                                    ", ".join(meeting.get("attendees") or [])] if x)), st["meta"]),
