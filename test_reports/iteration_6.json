@@ -1,0 +1,37 @@
+{
+  "summary": "Tested the Add-meeting modal bug fix, the black/white palette, removal of demo data, the trimmed integrations list, removal of the login hint, and a regression pass. Modal: the add-meeting-modal and client-memory-modal are now children of BODY. The overlay covers the full viewport (1280x600 and 390x640 both measured edge to edge). The card is centred, has max-h 90vh and overflow-y auto, and scrolls inside itself (scrollHeight 680 > clientHeight 538/574). The close button (X), clicking the overlay and saving (with a 'Meeting added' toast and the new item in the list) all work, for both meetings and contacts. Colours: a computed-style scan of /login and /app, /app/meetings, /app/clients, /app/integrations, /app/billing, /app/settings and /app/admin found no blue, indigo or lime. The only match was the official Google logo on /login. Primary buttons are rgb(10,14,26) with white text. The active sidebar item is white with ink text and no shadow. The favicon is a white mark on black. Data: a new user who completes onboarding gets an empty dashboard, meetings list and client memory. The backend ignores load_demo_data=true. The DB has 0 is_demo docs in every collection and 0 outlook/hubspot/salesforce rows. Integrations shows only Google Calendar, Gmail and Manual Notes. The landing page and FAQ never mention Outlook, HubSpot, Salesforce, CRM or Coming soon. Login shows no admin hint. Regression: meeting detail, video room, billing and dashboard render with no page errors. pytest: 54 passed, 1 skipped, after updating 3 tests that assumed demo data or setup_required integrations. Found 2 small colour bugs left over from the palette swap, listed under design_issues.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "models.py OnboardingRequest", "issue": "load_demo_data still defaults to True and is now ignored, and seed.seed_demo_data is dead code. Remove both to avoid confusion."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Landing footer CTA", "issue": "On hover, 'Start free' changes to hover:bg-primary/90 (near-black) and keeps text-ink, so the button disappears into the dark CTA panel. Confirmed by screenshot.", "selector": "[data-testid='footer-cta-button']", "priority": "MEDIUM"},
+      {"component": "Login/Register left panel", "issue": "The CheckCircle2 bullet icons use text-primary, which is now near-black, on the bg-ink panel, so they are invisible. Use text-white.", "selector": "pages/Login.jsx:45, pages/Register.jsx:46", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Add meeting modal (mobile 390px)", "issues": ["The native datetime-local input in the half-width 'Start time' column is cut off ('mm/dd/yyyy, ' truncated). Make it full width on mobile or use a shadcn date picker.", "The title placeholder still says 'Northwind — Quarterly Review' and the attendees placeholder still says 'Dana Whitfield, You'. These are only examples, but the sample names could be swapped for generic ones."]},
+      {"screen": "Client Memory Add contact modal", "issues": ["The title, company, email, preferences and notes inputs have no data-testid. Only contact-name-input and save-contact-button do."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_briefcraft_api.py", "/app/backend/tests/test_video_notes_google.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Landing.jsx:308 footer-cta-button: change hover:bg-primary/90 to hover:bg-white/90 or similar so the button stays visible on hover",
+    "Login.jsx:45 and Register.jsx:46: change the CheckCircle2 icons from text-primary to text-white (or text-signal)",
+    "Optional: make the Start time input full width on mobile, add data-testids to the contact form fields, and remove the unused load_demo_data and seed_demo_data"
+  ],
+  "critical_code_review_comments": [
+    "The palette swap made primary near-black, so any place that used text-primary or bg-primary on a bg-ink surface has lost contrast. The scan found only the two items above, but check any new dark sections.",
+    "server.py is 897 lines, over the 700-line guideline. Consider splitting it into route modules."
+  ],
+  "updated_files": ["/app/backend/tests/test_briefcraft_api.py", "/app/backend/tests/test_video_notes_google.py"],
+  "success_rate": {"backend": "100% (54 passed, 1 skipped)", "frontend": "95% (all requested items pass; 2 minor colour regressions)"},
+  "test_credentials": "admin@briefcraft.ai / Admin@12345 (from /app/memory/test_credentials.md). New TEST users are registered as test_ui_<ts>@example.com / Test@12345.",
+  "seed_data_creation": "Created TEST_ users with TEST_ contacts and meetings. The TEST_UI meeting on the admin account was deleted. Admin still has 'Room test' and 'Room test 2' from earlier iterations.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The tests no longer assume demo data. test_generate_brief_and_usage creates its own contact and meeting. Integrations are only gmail, google_calendar and manual_notes, and unavailable providers return 404 on connect. The modals use createPortal to document.body, and the route wrapper .bc-fade is an opacity-only animation."
+}

@@ -39,7 +39,7 @@ class OnboardingInput(BaseModel):
     default_objective: Optional[str] = ""
     tone: str = "professional"
     detail_level: str = "balanced"
-    load_demo_data: bool = True
+    load_demo_data: bool = False
 
 
 class PreferencesInput(BaseModel):

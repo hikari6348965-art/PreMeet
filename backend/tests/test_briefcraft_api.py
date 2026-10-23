@@ -95,8 +95,10 @@ def test_onboarding_with_demo_and_dashboard(user_ctx):
     dd = d.json()
     for k in ["upcoming_meetings", "recent_briefs", "commitments", "integrations", "usage", "plan", "stats"]:
         assert k in dd
-    assert len(s.get(f"{API}/meetings").json()) > 0
-    assert len(s.get(f"{API}/contacts").json()) > 0
+    # Demo seeding removed: even with load_demo_data=True new accounts start empty
+    assert s.get(f"{API}/meetings").json() == []
+    assert s.get(f"{API}/contacts").json() == []
+    assert dd["upcoming_meetings"] == []
 
 
 # ---- Preferences ----
@@ -161,11 +163,12 @@ def test_integrations(user_ctx):
     rows = s.get(f"{API}/integrations").json()
     assert len(rows) > 0
     # Google providers now use a real OAuth redirect (covered in test_video_notes_google.py)
-    oauth = [r for r in rows if r.get("requires_oauth") and r["provider"] not in ("google_calendar", "gmail")]
+    # Only Google Calendar, Gmail, Manual Notes remain (Outlook/HubSpot/Salesforce removed)
+    assert sorted(r["provider"] for r in rows) == ["gmail", "google_calendar", "manual_notes"]
     manual = [r for r in rows if not r.get("requires_oauth")]
-    assert oauth and manual
-    r = s.post(f"{API}/integrations/{oauth[0]['provider']}/connect").json()
-    assert r["ok"] is False and r["status"] == "setup_required"
+    assert manual
+    for p in ("outlook_calendar", "hubspot", "salesforce"):
+        assert s.post(f"{API}/integrations/{p}/connect").status_code == 404
     r = s.post(f"{API}/integrations/{manual[0]['provider']}/connect").json()
     assert r["status"] == "connected"
     s.post(f"{API}/integrations/{manual[0]['provider']}/disconnect")
@@ -178,8 +181,10 @@ def test_integrations(user_ctx):
 def test_generate_brief_and_usage(user_ctx):
     s = bearer(user_ctx["token"])
     before = s.get(f"{API}/usage").json()["usage"]["briefs_generated"]
-    meetings = s.get(f"{API}/meetings").json()
-    target = next((m for m in meetings if m.get("contact_id")), meetings[0])
+    # No demo data: create a contact + meeting to brief
+    c = s.post(f"{API}/contacts", json={"name": "TEST_BriefContact", "company": "TEST_Co"}).json()
+    target = s.post(f"{API}/meetings", json={"title": "TEST_BriefMeeting", "start_time": "2030-01-01T10:00:00+00:00",
+                                            "objective": "Discuss pilot", "contact_id": c["id"], "company": "TEST_Co"}).json()
     r = s.post(f"{API}/briefs/generate", json={"meeting_id": target["id"]}, timeout=180)
     assert r.status_code == 200, r.text
     b = r.json()

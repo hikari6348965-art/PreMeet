@@ -305,7 +305,7 @@ export default function Landing() {
           <Quote className="h-8 w-8 text-signal mx-auto" />
           <h2 className="relative mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">Never walk in unprepared again.</h2>
           <p className="relative mt-4 text-white/70 max-w-xl mx-auto">Start free and generate your first source-verified brief in minutes.</p>
-          <Link to="/register" data-testid="footer-cta-button" className="relative mt-8 inline-flex h-12 px-8 rounded-lg bg-signal text-ink font-bold items-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98]">
+          <Link to="/register" data-testid="footer-cta-button" className="relative mt-8 inline-flex h-12 px-8 rounded-lg bg-white text-ink font-bold items-center gap-2 hover:bg-white/85 transition-all active:scale-[0.98]">
             Start free <ArrowRight className="h-4 w-4" />
           </Link>
         </div>

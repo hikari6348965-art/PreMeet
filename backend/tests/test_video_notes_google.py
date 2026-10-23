@@ -201,12 +201,8 @@ def test_google_sync_not_connected_409(users):
     assert a["s"].post(f"{API}/integrations/google/sync").status_code == 409
 
 
-def test_other_integrations_setup_required(users):
+def test_unavailable_integrations_removed(users):
+    # Outlook/HubSpot/Salesforce were removed from the catalog
     a, _ = users
-    rows = a["s"].get(f"{API}/integrations").json()
-    provs = {r["provider"] for r in rows}
-    for p in ("outlook", "hubspot", "salesforce"):
-        if p in provs:
-            r = a["s"].post(f"{API}/integrations/{p}/connect").json()
-            assert r["status"] == "setup_required", r
-    print("providers:", provs)
+    provs = {r["provider"] for r in a["s"].get(f"{API}/integrations").json()}
+    assert provs == {"google_calendar", "gmail", "manual_notes"}, provs

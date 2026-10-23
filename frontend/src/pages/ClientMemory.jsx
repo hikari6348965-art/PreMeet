@@ -234,7 +234,7 @@ function Modal({ title, onClose, children }) {
 function Inp({ label, value, onChange, required, testid }) {
   return (
     <div><label className="text-sm font-medium">{label}</label>
-      <input value={value} required={required} data-testid={testid} onChange={(e) => onChange(e.target.value)}
+      <input value={value} required={required} data-testid={testid || `contact-${label.toLowerCase().replace(/[^a-z]+/g, "-")}-input`} onChange={(e) => onChange(e.target.value)}
         className="mt-1.5 w-full h-11 px-3.5 rounded-lg border border-input bg-card text-sm focus:outline-none focus:ring-2 focus:ring-ring/40 focus:border-primary transition" />
     </div>
   );

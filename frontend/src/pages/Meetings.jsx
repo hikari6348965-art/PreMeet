@@ -92,9 +92,9 @@ export default function Meetings() {
             <form onSubmit={create} className="space-y-4">
               <Field label="Title">
                 <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} data-testid="meeting-title-input"
-                  className="input" placeholder="Northwind — Quarterly Review" />
+                  className="input" placeholder="e.g. Quarterly review with Acme" />
               </Field>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Type">
                   <select value={form.meeting_type} onChange={(e) => setForm({ ...form, meeting_type: e.target.value })} data-testid="meeting-type-select" className="input">
                     {MEETING_TYPES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
@@ -117,7 +117,7 @@ export default function Meetings() {
                 <input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="input" placeholder="Acme Inc." />
               </Field>
               <Field label="Attendees (comma separated)">
-                <input value={form.attendees} onChange={(e) => setForm({ ...form, attendees: e.target.value })} className="input" placeholder="Dana Whitfield, You" />
+                <input value={form.attendees} onChange={(e) => setForm({ ...form, attendees: e.target.value })} className="input" placeholder="Names, separated by commas" data-testid="meeting-attendees-input" />
               </Field>
               <Field label="Objective (optional)">
                 <input value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} data-testid="meeting-objective-input" className="input" placeholder="What do you want to achieve?" />

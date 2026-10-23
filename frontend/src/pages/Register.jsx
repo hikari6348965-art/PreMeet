@@ -43,7 +43,7 @@ export default function Register() {
           <ul className="space-y-3 text-white/70">
             {["Free starter plan", "Set up in under 2 minutes", "Your data stays isolated and private"].map((t) => (
               <li key={t} className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-primary" /> {t}
+                <CheckCircle2 className="h-5 w-5 text-white" /> {t}
               </li>
             ))}
           </ul>
