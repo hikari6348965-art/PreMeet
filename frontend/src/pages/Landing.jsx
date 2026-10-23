@@ -314,7 +314,10 @@ export default function Landing() {
       <footer className="border-t border-border">
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
           <Logo tone="ink" className="h-6" testid="footer-logo" />
-          <p>© {new Date().getFullYear()} PreMeet. Walk into every meeting prepared.</p>
+          <div className="flex items-center gap-5">
+            <Link to="/privacy" data-testid="footer-privacy-link" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <p>© {new Date().getFullYear()} PreMeet</p>
+          </div>
         </div>
       </footer>
     </div>

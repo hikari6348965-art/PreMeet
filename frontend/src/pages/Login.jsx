@@ -94,6 +94,9 @@ export default function Login() {
               Create one
             </Link>
           </p>
+          <p className="text-xs text-muted-foreground mt-4 text-center">
+            <Link to="/privacy" className="underline hover:text-foreground" data-testid="login-privacy-link">Privacy Policy</Link>
+          </p>
         </div>
       </div>
     </div>
