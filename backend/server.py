@@ -115,9 +115,13 @@ class GoogleSessionInput(BaseModel):
 
 @api.post("/auth/google-session")
 async def google_session(payload: GoogleSessionInput, response: Response):
-    async with httpx.AsyncClient(timeout=15) as c:
-        r = await c.get("https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-                        headers={"X-Session-ID": payload.session_id})
+    try:
+        async with httpx.AsyncClient(timeout=15) as c:
+            r = await c.get("https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                            headers={"X-Session-ID": payload.session_id})
+    except httpx.HTTPError as e:
+        logger.error(f"Google session exchange failed: {e}")
+        raise HTTPException(status_code=503, detail="Google sign-in is temporarily unavailable. Please try again.")
     if r.status_code != 200:
         raise HTTPException(status_code=401, detail="Google sign-in failed. Please try again.")
     info = r.json()
@@ -883,7 +887,7 @@ async def startup():
         await seed.ensure_user_subscription(uid)
         await seed.ensure_integration_rows(uid)
         await seed.ensure_preferences(uid)
-    elif not authmod.verify_password(admin_password, existing["password_hash"]):
+    elif not existing.get("password_hash") or not authmod.verify_password(admin_password, existing["password_hash"]):
         await db.users.update_one({"email": admin_email},
                                   {"$set": {"password_hash": authmod.hash_password(admin_password)}})
     logger.info("PreMeet backend started.")

@@ -1,0 +1,33 @@
+{
+  "summary": "Tested the PreMeet rename, Emergent-managed Google login/signup and auth regression. Backend pytest: 51 passed, 1 skipped, 3 failed. All 3 failures are brief-email tests; logs show Emergent email 'insufficient_credits' (an environment/credit issue, not a code bug). New test file test_google_auth_premeet.py: all passed (bogus session gives 401 with the expected message, missing session_id gives 422, a simulated Google-only user can use /me /meetings /preferences /usage /integrations, password login for a Google-only email gives 401 not 500). Frontend: title is 'PreMeet — Walk into every meeting prepared'. No 'BriefCraft' text on landing, login, register, onboarding, the dashboard sidebar, meetings/settings/billing/integrations or the guest join page. The notes PDF stream contains 'PREMEET' and EMAIL_FROM_NAME=PreMeet. google-login-btn sits above the email form; both google-login-btn and google-signup-btn go to https://auth.emergentagent.com/?redirect=<origin>%2Fapp. /app#session_id=bogus shows auth-callback, then redirects to /login with the toast 'Google sign-in failed. Please try again.' The simulated Google user (localStorage token) loads the dashboard with its name in the sidebar. Register + onboarding + sign out + admin login all work. Logged-out /app/meetings redirects to /login.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "POST /api/auth/google-session", "issue": "httpx network errors (timeout/ConnectError) calling demobackend session-data are not caught, so they surface as 500 instead of a friendly 401/503"},
+      {"endpoint": "Brief emails (auto + POST /api/briefs/{id}/email)", "issue": "Email provider returns insufficient_credits, so email_status=failed and 503. Environment/credits only; the code handles it gracefully"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Login", "issues": ["Demo admin hint still shows 'admin@briefcraft.ai' (the email was intentionally kept unchanged, but it is the only visible 'briefcraft' string; consider hiding the hint in production)"]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_google_auth_premeet.py", "/app/backend/tests/test_briefcraft_api.py", "/app/backend/tests/test_brief_emails.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Optional: wrap the httpx call in google_session with try/except httpx.HTTPError and return a 503/401 with a friendly message",
+    "Top up Emergent credits for the email key so brief emails send (not a code fix)"
+  ],
+  "critical_code_review_comments": [
+    "google_session links to an existing account by email. This is acceptable because Google verifies the email, but the 'google_linked' flag is never shown to users. Consider showing 'Signed in with Google' in Settings",
+    "backend/storage.py APP_NAME='briefcraft' is an internal storage namespace. Leave it unchanged so existing objects keep resolving"
+  ],
+  "updated_files": ["/app/backend/tests/test_brief_emails.py (EMAIL_FROM_NAME assertion now 'PreMeet')", "/app/backend/tests/test_briefcraft_api.py (docstring rename)", "/app/backend/tests/test_google_auth_premeet.py (new)"],
+  "success_rate": {"backend": "94% (51/54; 3 failures are environment email credits)", "frontend": "100%"},
+  "test_credentials": "admin@briefcraft.ai / Admin@12345 (from /app/memory/test_credentials.md)",
+  "seed_data_creation": "Test users test_ui_*@example.com and test_*@example.com registered; the simulated Google users were removed after testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Simulate a Google user by inserting a users doc without password_hash and minting a JWT via auth.create_access_token (see test_google_auth_premeet.py). The email tests fail while the Emergent email key has insufficient credits. Known user-side blockers: Daily plan has no recording; the Google Calendar redirect URI is not registered."
+}

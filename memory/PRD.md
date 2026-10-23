@@ -40,3 +40,9 @@ MVP Phase 1: JWT email+password auth, onboarding, manual meeting + notes entry, 
 - Redesign "Crisp and confident": Space Grotesk display, ink #0B0F1A, indigo primary, signal lime #C6F432, dark sidebar, hard-shadow cards, marquee, staggered rises.
 - Tests: iteration_4 + fixes; backend pytest all pass.
 - Outlook/HubSpot/Salesforce: "Coming soon" (need developer apps)
+
+## Session 4 (2026-06)
+- Renamed product to PreMeet (UI, emails EMAIL_FROM_NAME, PDF, title). Storage namespace 'briefcraft' and admin email admin@briefcraft.ai intentionally unchanged.
+- Google login/signup (Emergent managed): POST /api/auth/google-session links by email, issues app JWT. AuthCallback on /app#session_id. See /app/auth_testing.md.
+- Microsoft/Outlook integration: removed at user request (none written). MICROSOFT_CLIENT_ID/SECRET secrets exist but unused.
+- Tests iteration_5: all pass except brief emails failing due to Emergent email insufficient_credits (environment).

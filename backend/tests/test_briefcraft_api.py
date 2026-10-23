@@ -1,4 +1,4 @@
-"""BriefCraft AI backend regression tests: auth, onboarding, prefs, meetings, briefs (LLM), integrations, usage, admin."""
+"""PreMeet backend regression tests: auth, onboarding, prefs, meetings, briefs (LLM), integrations, usage, admin."""
 import os
 import uuid
 import pytest

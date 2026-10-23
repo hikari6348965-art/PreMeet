@@ -76,7 +76,7 @@ def test_render_brief_ready_html():
     assert "Close renewal" in html
     assert "P0" in html and "P2" in html and "P3" not in html
     assert link.startswith("https://") and link in html
-    assert os.environ["EMAIL_FROM_NAME"] == "BriefCraft AI"
+    assert os.environ["EMAIL_FROM_NAME"] == "PreMeet"
     email_service._assert_safe_email(subject, html)
 
 
