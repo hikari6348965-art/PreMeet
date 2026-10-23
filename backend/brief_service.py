@@ -1,8 +1,9 @@
+
 import os
 import json
 import logging
 from datetime import datetime, timezone
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from anthropic import AsyncAnthropic
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +41,23 @@ Return ONLY valid JSON (no markdown fences) with EXACTLY this schema:
 If a section has no grounded content, return an empty array/null and add a note to missing_information."""
 
 
-def build_context(meeting: dict, contact: dict | None, company: dict | None,
-                  notes: list[dict], commitments: list[dict]) -> str:
+def build_context(
+    meeting: dict,
+    contact: dict | None,
+    company: dict | None,
+    notes: list[dict],
+    commitments: list[dict],
+) -> str:
     lines = ["=== UPCOMING MEETING ==="]
     lines.append(f"Title: {meeting.get('title')}")
     lines.append(f"Type: {meeting.get('meeting_type')}")
     lines.append(f"Start: {meeting.get('start_time')}")
-    lines.append(f"Objective (user-stated): {meeting.get('objective') or 'not provided'}")
-    lines.append(f"Attendees: {', '.join(meeting.get('attendees') or []) or 'not provided'}")
+    lines.append(
+        f"Objective (user-stated): {meeting.get('objective') or 'not provided'}"
+    )
+    lines.append(
+        f"Attendees: {', '.join(meeting.get('attendees') or []) or 'not provided'}"
+    )
 
     lines.append("\n=== CONTACT ===")
     if contact:
@@ -56,7 +66,9 @@ def build_context(meeting: dict, contact: dict | None, company: dict | None,
         lines.append(f"Company: {contact.get('company') or 'unknown'}")
         lines.append(f"Email: {contact.get('email') or 'unknown'}")
         if contact.get("preferences"):
-            lines.append(f"Recorded preferences: {'; '.join(contact['preferences'])}")
+            lines.append(
+                f"Recorded preferences: {'; '.join(contact['preferences'])}"
+            )
         if contact.get("notes"):
             lines.append(f"Contact notes: {contact['notes']}")
     else:
@@ -73,61 +85,126 @@ def build_context(meeting: dict, contact: dict | None, company: dict | None,
     lines.append("\n=== PREVIOUS NOTES ===")
     if notes:
         for n in notes:
-            lines.append(f"- [{n.get('source_type','manual')}] '{n.get('title')}' ({n.get('created_at','')[:10]}): {n.get('content')}")
+            created_at = str(n.get("created_at") or "")
+            lines.append(
+                f"- [{n.get('source_type', 'manual')}] "
+                f"'{n.get('title')}' ({created_at[:10]}): "
+                f"{n.get('content')}"
+            )
     else:
         lines.append("No notes available.")
 
     lines.append("\n=== KNOWN COMMITMENTS / TASKS ===")
     if commitments:
         for c in commitments:
-            lines.append(f"- {c.get('description')} | owner: {c.get('owner') or 'unknown'} | due: {c.get('due_date') or 'none'} | status: {c.get('status')} | source: {c.get('source_label')}")
+            lines.append(
+                f"- {c.get('description')} | "
+                f"owner: {c.get('owner') or 'unknown'} | "
+                f"due: {c.get('due_date') or 'none'} | "
+                f"status: {c.get('status')} | "
+                f"source: {c.get('source_label')}"
+            )
     else:
         lines.append("No recorded commitments.")
+
     return "\n".join(lines)
 
 
 def _strip_json(text: str) -> str:
     text = text.strip()
+
     if text.startswith("```"):
         text = text.split("```", 2)[1] if "```" in text else text
         if text.startswith("json"):
             text = text[4:]
         text = text.strip("`").strip()
+
     start = text.find("{")
     end = text.rfind("}")
+
     if start != -1 and end != -1:
         text = text[start:end + 1]
+
     return text
 
 
-async def generate_brief(context: str, tone: str, detail_level: str, template: str) -> dict:
-    api_key = os.environ["EMERGENT_LLM_KEY"]
-    system = SYSTEM_PROMPT + f"\n\nWriting tone: {tone}. Detail level: {detail_level}. Brief template: {template}."
-    chat = LlmChat(
-        api_key=api_key,
-        session_id=f"brief-{datetime.now(timezone.utc).timestamp()}",
-        system_message=system,
-    ).with_model("anthropic", "claude-sonnet-5-5")
+async def generate_brief(
+    context: str,
+    tone: str,
+    detail_level: str,
+    template: str,
+) -> dict:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if not api_key:
+        raise RuntimeError("ANTHROPIC_API_KEY environment variable is missing")
 
-    user_msg = UserMessage(text=f"Generate the meeting brief JSON from this context:\n\n{context}")
-    response = await chat.send_message(user_msg)
-    raw = response if isinstance(response, str) else str(response)
+    system = (
+        SYSTEM_PROMPT
+        + f"\n\nWriting tone: {tone}."
+        + f" Detail level: {detail_level}."
+        + f" Brief template: {template}."
+    )
+
+    client = AsyncAnthropic(api_key=api_key)
+
+    try:
+        response = await client.messages.create(
+            model=os.environ.get(
+                "ANTHROPIC_MODEL",
+                "claude-sonnet-4-6",
+            ),
+            max_tokens=8192,
+            system=system,
+            messages=[
+                {
+                    "role": "user",
+                    "content": (
+                        "Generate the meeting brief JSON from this context:\n\n"
+                        f"{context}"
+                    ),
+                }
+            ],
+        )
+    except Exception:
+        logger.exception("Anthropic meeting brief request failed")
+        raise
+
+    raw = "".join(
+        block.text
+        for block in response.content
+        if block.type == "text"
+    )
+
     cleaned = _strip_json(raw)
+
     try:
         data = json.loads(cleaned)
     except json.JSONDecodeError as e:
-        logger.error(f"Brief JSON parse failed: {e}\nRaw: {raw[:500]}")
-        raise ValueError("AI returned invalid JSON")
+        logger.error("Brief JSON parse failed: %s; raw: %s", e, raw[:500])
+        raise ValueError("AI returned invalid JSON") from e
 
-    # Deterministic validation / defaults
-    for key, default in [
-        ("objective", ""), ("who_you_are_meeting", ""), ("background", []),
-        ("previous_interaction", None), ("open_commitments", []),
-        ("recent_developments", []), ("talking_points", []),
-        ("suggested_questions", []), ("risks_and_opportunities", []),
-        ("recommended_next_actions", []), ("missing_information", []), ("sources", []),
-    ]:
+    if not isinstance(data, dict):
+        raise ValueError("AI response must be a JSON object")
+
+    defaults = {
+        "objective": "",
+        "who_you_are_meeting": "",
+        "background": [],
+        "previous_interaction": None,
+        "open_commitments": [],
+        "recent_developments": [],
+        "talking_points": [],
+        "suggested_questions": [],
+        "risks_and_opportunities": [],
+        "recommended_next_actions": [],
+        "missing_information": [],
+        "sources": [],
+    }
+
+    for key, default in defaults.items():
         if key not in data or data[key] is None:
             data[key] = default
+
     data["generated_at"] = datetime.now(timezone.utc).isoformat()
+
     return data
