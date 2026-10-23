@@ -165,8 +165,8 @@ class VerifyPaymentInput(BaseModel):
 # ---------- Admin ----------
 class PlanUpdateInput(BaseModel):
     name: Optional[str] = None
-    price_monthly: Optional[float] = None
-    brief_allowance: Optional[int] = None
+    price_monthly: Optional[float] = Field(default=None, ge=0)
+    brief_allowance: Optional[int] = Field(default=None, ge=0)
     integration_limit: Optional[int] = None
     history_retention_days: Optional[int] = None
     advanced_research: Optional[bool] = None

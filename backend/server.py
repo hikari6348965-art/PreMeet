@@ -101,7 +101,8 @@ async def register(payload: RegisterInput, request: Request, response: Response)
 @api.post("/auth/login")
 async def login(payload: LoginInput, request: Request, response: Response):
     email = payload.email.lower()
-    ip = request.client.host if request.client else "unknown"
+    fwd = request.headers.get("x-forwarded-for", "")
+    ip = fwd.split(",")[0].strip() if fwd else (request.client.host if request.client else "unknown")
     await authmod.check_brute_force(ip, email)
     user = await db.users.find_one({"email": email})
     if not user or not authmod.verify_password(payload.password, user["password_hash"]):
@@ -140,6 +141,8 @@ async def refresh_token(request: Request, response: Response):
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type")
         user = await db.users.find_one({"_id": ObjectId(payload["sub"])})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
         access = authmod.create_access_token(str(user["_id"]), user["email"])
         response.set_cookie("access_token", access, httponly=True, secure=True,
                             samesite="none", max_age=604800, path="/")
@@ -327,7 +330,7 @@ async def update_contact(contact_id: str, payload: ContactInput, user=Depends(au
     res = await db.contacts.update_one({"id": contact_id, "user_id": user["id"]}, {"$set": updates})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
-    return clean(await db.contacts.find_one({"id": contact_id}))
+    return clean(await db.contacts.find_one({"id": contact_id, "user_id": user["id"]}))
 
 
 @api.delete("/contacts/{contact_id}")
@@ -425,7 +428,7 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
     contact = await db.contacts.find_one({"id": meeting.get("contact_id"), "user_id": uid}) if meeting.get("contact_id") else None
     company = None
     if contact and contact.get("company_id"):
-        company = await db.companies.find_one({"id": contact["company_id"]})
+        company = await db.companies.find_one({"id": contact["company_id"], "user_id": uid})
     notes = await db.notes.find({"user_id": uid, "contact_id": meeting.get("contact_id")}).to_list(50) if meeting.get("contact_id") else []
     commitments = await db.commitments.find({"user_id": uid, "contact_id": meeting.get("contact_id")}).to_list(50) if meeting.get("contact_id") else []
 
@@ -490,7 +493,7 @@ async def regenerate_section(brief_id: str, payload: RegenerateSectionInput, use
     if not b:
         raise HTTPException(status_code=404, detail="Brief not found")
     meeting = await db.meetings.find_one({"id": b["meeting_id"], "user_id": user["id"]})
-    contact = await db.contacts.find_one({"id": meeting.get("contact_id")}) if meeting and meeting.get("contact_id") else None
+    contact = await db.contacts.find_one({"id": meeting.get("contact_id"), "user_id": user["id"]}) if meeting and meeting.get("contact_id") else None
     notes = await db.notes.find({"user_id": user["id"], "contact_id": meeting.get("contact_id")}).to_list(50) if meeting and meeting.get("contact_id") else []
     commitments = await db.commitments.find({"user_id": user["id"], "contact_id": meeting.get("contact_id")}).to_list(50) if meeting and meeting.get("contact_id") else []
     pref = await db.preferences.find_one({"user_id": user["id"]}) or {}

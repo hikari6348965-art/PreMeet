@@ -65,7 +65,7 @@ export default function Integrations() {
                         <p className="font-semibold">{r.name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{r.requires_oauth ? "OAuth · read-only" : "Available now"}</p>
                       </div>
-                      <StatusBadge status={r.status} />
+                      <StatusBadge status={r.requires_oauth && r.status === "not_connected" ? "setup_required" : r.status} />
                     </div>
                     <div className="mt-4">
                       {r.status === "connected" ? (

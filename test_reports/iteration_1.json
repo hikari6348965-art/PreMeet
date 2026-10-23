@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 1: full backend + frontend E2E for BriefCraft AI. Backend: 18 pytest tests, 17 passed. They cover auth, onboarding, preferences, meeting/contact/note/commitment CRUD, user isolation, integrations, real LLM brief generation with usage increment, plans/subscription, admin 403 for non-admin, and admin CRUD with restore. The only failure is the brute-force lockout, which never triggers behind the ingress. Frontend: every requested flow passed. That covers register→onboarding→dashboard, manual meeting creation, opening the detail page, AI brief generation (~20s, sources shown), settings save and persist after reload, plan/usage card, integrations Setup-required toasts and manual-notes disconnect/reconnect, client memory, the admin page (stats, users, plans edit/persist/restore, audit), the non-admin redirect away from /app/admin, logout, and protected-route redirects. No JS page errors.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/auth/login", "issue": "Brute-force lockout never triggers. auth.check_brute_force/record_failed_attempt key on request.client.host, which is the rotating ingress pod IP (seen: 10.66.0.11 and 10.66.5.130 for the same client). Failed attempts are split across identifiers, so after 6 bad logins the 6th still returns 401 instead of 429.", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "PUT /api/admin/plans/{id}", "issue": "No validation: an empty or negative price/allowance is accepted. The frontend sends Number('') = 0, so clearing the allowance field and clicking Save sets brief_allowance=0 (verified). Add Field(ge=0) or similar in PlanUpdateInput and block empty input in the UI."},
+      {"endpoint": "POST /api/auth/refresh", "issue": "If the user in the refresh token no longer exists, user is None and user['_id'] raises a 500. Return 401 instead."},
+      {"endpoint": "CORS", "issue": "allow_origins uses os.environ.get('FRONTEND_URL', 'http://localhost:3000') with a default fallback, and CORS_ORIGINS in .env is unused. Not breaking, since FRONTEND_URL is set."},
+      {"endpoint": "get_current_user", "issue": "The cookie token takes precedence over the Authorization Bearer header. If a stale cookie from another user is present, the bearer token is ignored. Consider preferring the header."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Admin plan edit", "issue": "Empty input is saved as 0 with no client-side validation (see backend minor).", "affected_selectors": ["admin-plan-allowance-{id}", "admin-plan-price-{id}"]}
+    ],
+    "design_issues": [
+      {"screen": "Settings", "issues": ["The Plan & usage card stretches to the full height of the left column (lg grid default stretch), leaving a large empty area. Use self-start/h-fit.", "Native <select> and checkbox controls are used instead of shadcn Select/Switch, which looks inconsistent with the premium theme."]},
+      {"screen": "Meetings add modal", "issues": ["Uses the browser-native datetime-local picker instead of the shadcn Calendar/date-time picker."]},
+      {"screen": "Integrations", "issues": ["OAuth cards show the badge 'Not connected'. 'Setup required' only appears in the top banner and toast. Consider a 'Setup required' badge on those cards for honesty and clarity."]},
+      {"screen": "Admin users table", "issues": ["The Plan column shows the capitalised plan_id (e.g. 'Pro') instead of the plan name ('Professional')."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_briefcraft_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Fix brute-force identifier: use the first IP in the X-Forwarded-For header (fall back to request.client.host), or key lockout on email only, so attempts accumulate behind the k8s ingress",
+    "Add ge=0 validation to PlanUpdateInput price_monthly/brief_allowance and prevent empty values in Admin PlanRow",
+    "Handle a missing user in /api/auth/refresh (return 401)",
+    "Optional UI polish: Settings plan card h-fit, shadcn Select/Switch/date picker, 'Setup required' badge on OAuth integration cards"
+  ],
+  "critical_code_review_comments": [
+    "server.py is 764 lines (>700). Split routes into routers (auth, meetings, briefs, billing, admin)",
+    "Brute-force protection is ineffective behind a proxy (see critical issue)",
+    "brief generation runs synchronously inside the request (~20s). OK for MVP, but there is no timeout guard, and the meeting stays 'preparing' if the process dies mid-call",
+    "get_meeting and generate_brief do not filter company lookup by user_id (db.companies.find_one({'id': ...})). Low risk because ids are UUIDs, but it is inconsistent tenant isolation. regenerate_section's contact lookup also lacks a user_id filter",
+    "Settings/Admin initial api.get calls have no .catch on the preferences/admin stats requests. On failure the page spins forever with no error state",
+    "bcrypt hashes are $2b$, httpOnly secure cookies are set on login/register, and seed_admin updates the password if changed: verified OK"
+  ],
+  "updated_files": ["/app/backend/tests/test_briefcraft_api.py"],
+  "success_rate": {"backend": "94% (17/18)", "frontend": "100% of requested flows"},
+  "test_credentials": "Admin admin@briefcraft.ai / Admin@12345 (from /app/memory/test_credentials.md) works. Regular users were registered on the fly.",
+  "seed_data_creation": "Test users test_*@example.com and their data were created and then deleted from the DB. Admin plan 'entry' was edited and restored to price 19, allowance 30 (price is now stored as float 19.0).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: REACT_APP_BACKEND_URL=... pytest /app/backend/tests/test_briefcraft_api.py. test_brute_force_lockout fails until the X-Forwarded-For fix lands. The LLM brief test takes ~20s. Razorpay upgrade UI is out of scope. 'Manage plan' on the dashboard links to /app/settings.",
+  "rca of the issue": "Brute force: reproduced by 6 bad logins for one email. Mongo login_attempts showed two records ('10.66.0.11:<email>' count 3 and '10.66.5.130:<email>' count 3), so neither reached 5. Root cause: request.client.host is the ingress/proxy pod IP, not the client IP. Mitigation: derive the IP from the X-Forwarded-For header (first entry), or track by email."
+}

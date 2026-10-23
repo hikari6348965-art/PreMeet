@@ -34,7 +34,7 @@ function PlanCard({ usage }) {
   const allowance = usage.plan?.brief_allowance ?? 0;
   const pct = allowance ? Math.min(100, Math.round((used / allowance) * 100)) : 0;
   return (
-    <Card className="p-6" data-testid="settings-plan-card">
+    <Card className="p-6 self-start" data-testid="settings-plan-card">
       <div className="flex items-center justify-between">
         <h2 className="font-semibold">Plan &amp; usage</h2>
         {usage.subscription?.provider === "test_mode" ? <StatusBadge status="test_mode" /> : <StatusBadge status="active" />}
@@ -54,8 +54,10 @@ export default function Settings() {
   const [usage, setUsage] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-    api.get("/preferences").then(({ data }) => setPref(data));
+    api.get("/preferences").then(({ data }) => setPref(data)).catch(() => setError(true));
     api.get("/usage").then(({ data }) => setUsage(data)).catch(() => {});
   }, []);
 
@@ -72,6 +74,7 @@ export default function Settings() {
     finally { setSaving(false); }
   };
 
+  if (error) return <p className="py-20 text-center text-muted-foreground" data-testid="settings-error">Couldn't load your settings. Please refresh.</p>;
   if (!pref) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (

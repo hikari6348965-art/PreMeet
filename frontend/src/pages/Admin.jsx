@@ -17,6 +17,9 @@ function PlanRow({ plan, onSaved }) {
   const [p, setP] = useState(plan);
   const [busy, setBusy] = useState(false);
   const save = async () => {
+    if (p.price_monthly === "" || p.brief_allowance === "" || Number(p.price_monthly) < 0 || Number(p.brief_allowance) < 0) {
+      toast.error("Price and allowance must be zero or more"); return;
+    }
     setBusy(true);
     try {
       const { data } = await api.put(`/admin/plans/${plan.id}`, {
@@ -48,12 +51,18 @@ export default function Admin() {
   const [plans, setPlans] = useState([]);
   const [audit, setAudit] = useState([]);
 
+  const [error, setError] = useState(false);
+
   useEffect(() => {
-    api.get("/admin/stats").then(({ data }) => setStats(data));
-    api.get("/admin/users").then(({ data }) => setUsers(data));
-    api.get("/admin/plans").then(({ data }) => setPlans(data));
-    api.get("/admin/audit").then(({ data }) => setAudit(data));
+    api.get("/admin/stats").then(({ data }) => setStats(data)).catch(() => setError(true));
+    api.get("/admin/users").then(({ data }) => setUsers(data)).catch(() => {});
+    api.get("/admin/plans").then(({ data }) => setPlans(data)).catch(() => {});
+    api.get("/admin/audit").then(({ data }) => setAudit(data)).catch(() => {});
   }, []);
+
+  const planName = (id) => plans.find((p) => p.id === id)?.name || id || "Free";
+
+  if (error) return <p className="py-20 text-center text-muted-foreground" data-testid="admin-error">Couldn't load admin data. Please refresh.</p>;
 
   if (!stats) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
@@ -75,7 +84,7 @@ export default function Admin() {
             {users.map((u) => (
               <tr key={u.id} className="border-t border-border" data-testid={`admin-user-${u.id}`}>
                 <td className="py-3 font-medium">{u.name}</td><td>{u.email}</td><td className="capitalize">{u.role}</td>
-                <td className="capitalize">{u.plan_id || "free"}</td><td>{u.briefs_this_month}</td>
+                <td>{planName(u.plan_id || "free")}</td><td>{u.briefs_this_month}</td>
               </tr>
             ))}
           </tbody>
