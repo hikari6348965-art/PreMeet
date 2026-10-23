@@ -632,7 +632,8 @@ async def verify_payment(payload: VerifyPaymentInput, user=Depends(authmod.get_c
         raise HTTPException(status_code=404, detail="Order not found")
     if not billing.verify_payment_signature(payload.razorpay_order_id,
                                             payload.razorpay_payment_id, payload.razorpay_signature):
-        await db.payment_orders.update_one({"order_id": payload.razorpay_order_id}, {"$set": {"status": "failed"}})
+        await db.payment_orders.update_one({"order_id": payload.razorpay_order_id, "status": "created"},
+                                           {"$set": {"status": "failed"}})
         raise HTTPException(status_code=400, detail="Payment verification failed")
     await _mark_order_paid(order, payload.razorpay_payment_id)
     return {"ok": True, "plan_id": order["plan_id"]}
@@ -688,7 +689,7 @@ async def razorpay_webhook(request: Request):
     if event.get("event") in ("payment.captured", "order.paid"):
         pay = event.get("payload", {}).get("payment", {}).get("entity", {})
         order = await db.payment_orders.find_one({"order_id": pay.get("order_id")})
-        if order:
+        if order and pay.get("amount") == int(round(order["amount_inr"] * 100)):
             await _mark_order_paid(order, pay.get("id"))
     return {"status": "processed"}
 

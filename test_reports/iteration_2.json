@@ -1,0 +1,46 @@
+{
+  "summary": "Iteration 2: Razorpay billing feature, backend and frontend. Backend: new tests/test_billing_razorpay.py has 10 tests, 9 passed. The regression suite test_briefcraft_api.py passes 18/18, including brute-force lockout, which is now fixed. Verified: plans price_inr (0/1672/2552); subscribe creates a real Razorpay test order (amount 167200 paise, stored as 'created'); verify with a valid HMAC activates the STORED plan even when the client sends a different plan_id; replay is idempotent; an invalid signature returns 400 and marks the order failed; another user's order returns 404; the payments list is user-scoped; the webhook accepts a valid signature and rejects an invalid one (400); switching to free works; an expired paid subscription is downgraded to free. One bug found: an invalid signature overwrites an already-PAID order to 'failed'. Frontend: all requested flows passed. The upgrade dialog appears on a 402 when free quota is used up, 'Maybe later' closes it and 'See plans' goes to /app/billing. The Billing page shows the current plan, usage, period end, 3 plan cards with USD price and INR note, the Current plan badge, the correct CTA labels and payment history (Done badge). The Razorpay checkout iframe opens in Test Mode with 1672. Switching to free works. Landing pricing INR notes and CTA links are correct (/register logged out, /app/billing logged in). The dashboard-manage-plan, settings-manage-billing and nav-billing links all work. No JS page errors.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "POST /api/billing/verify", "issue": "On an invalid signature, the code runs update_one({'order_id': ...}, {'$set': {'status': 'failed'}}) with no status filter, so a PAID order gets flipped to 'failed'. Anyone holding a paid order_id (the owner) can corrupt payment history. A later valid replay then passes _mark_order_paid's {'status': {'$ne': 'paid'}} filter and calls _activate_plan again, which resets current_period_end to now+30 days. The plan can be extended indefinitely by replaying one payment. Fix: filter the failed update with {'status': {'$ne': 'paid'}} (or 'created' only).", "priority": "HIGH"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/billing/webhook", "issue": "The payment entity amount/currency is not checked against the stored order amount_inr. The signature makes this low risk, but a cheap defensive check is worthwhile."},
+      {"endpoint": "POST /api/billing/subscribe", "issue": "Orders dismissed in checkout stay in 'created' forever. Fine for MVP, but they accumulate."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {"flow": "Switch paid -> free", "issue": "One click on 'Switch to free' immediately drops a paid user (e.g. Entry, active until Nov 22) to Starter Trial and discards the remaining paid period. There is no confirmation dialog. Add a confirm step or schedule the downgrade at period end.", "affected_selectors": ["plan-select-free"]}
+    ],
+    "design_issues": [
+      {"screen": "Upgrade dialog", "issues": ["The copy duplicates 'Upgrade': the backend message ends with 'Upgrade to generate more.' and the dialog appends 'Upgrade to keep preparing for meetings.'"]},
+      {"screen": "Landing pricing", "issues": ["The 'Most popular' badge sits above the Entry title, so the Entry name and price are about 30px lower than the other two cards and the row is misaligned. Put the badge inline with the title, as on the Billing PlanCard."]},
+      {"screen": "Billing", "issues": ["A featured (Entry) card that is the current plan shows a faded primary 'Current plan' button plus the badge, which is redundant. Minor."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_billing_razorpay.py", "/app/backend/tests/test_briefcraft_api.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "HIGH: in /api/billing/verify, only mark the order failed if status != 'paid' (e.g. update_one({'order_id': oid, 'status': {'$ne': 'paid'}}, ...)) so paid orders cannot be corrupted and the plan cannot be re-extended by replaying",
+    "Add a confirmation before a paid user switches to free (or downgrade at period end)",
+    "De-duplicate the 'Upgrade...' sentence in the UpgradeDialog/backend 402 message",
+    "Align the landing pricing cards: move the 'Most popular' badge inline with the title",
+    "Optional: validate the webhook payment amount against the stored order"
+  ],
+  "critical_code_review_comments": [
+    "verify_payment's failed-status update lacks a status guard (see critical issue)",
+    "server.py is now 805 lines; split the billing/admin routes into routers",
+    "VerifyPaymentInput.plan_id is accepted but correctly ignored (plan taken from the stored order). Good. Consider removing it from the client payload",
+    "The expiry downgrade in get_plan_for_user relies on lexicographic ISO string comparison. This works because both sides use datetime.isoformat() in UTC; keep the format consistent",
+    "The webhook imports json inline; move it to the module level"
+  ],
+  "updated_files": ["/app/backend/tests/test_billing_razorpay.py", "/app/backend/tests/setup_ui_user.py"],
+  "success_rate": {"backend": "96% (27/28: 9/10 billing + 18/18 regression)", "frontend": "100% of requested flows"},
+  "test_credentials": "Admin admin@briefcraft.ai / Admin@12345 (from /app/memory/test_credentials.md). Test users were registered on the fly.",
+  "seed_data_creation": "Test users test_bill_*/test_ui_* and all their data (orders, subscriptions, usage, meetings, audit) were deleted afterwards. The admin subscription is verified to be plan_id=free, status active. Plans are unchanged (free 0/3, entry 19/30, pro 29/100).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Run: REACT_APP_BACKEND_URL=<url> pytest /app/backend/tests/ (pytest.ini uses xdist loadscope, and the module fixture keeps billing tests on one worker). The billing tests compute signatures from /app/backend/.env secrets via dotenv and use pymongo for DB checks. setup_ui_user.py creates a user with 3/3 briefs used and one meeting; set users.onboarded=true in Mongo to skip onboarding. test_invalid_sig_on_paid_order_does_not_downgrade_status should pass once the verify fix lands.",
+  "rca of the issue": "Verify bug: server.py verify_payment calls db.payment_orders.update_one({'order_id': payload.razorpay_order_id}, {'$set': {'status': 'failed'}}) for any bad signature, regardless of the current status. Repro: pay an order (valid verify), then POST verify with the same order_id and signature='bad', and the order status becomes 'failed'. POST again with the valid signature: _mark_order_paid matches status!='paid', modified_count=1, and _activate_plan resets current_period_end. Mitigation: add the status guard to the failed update and keep _activate_plan only on the created->paid transition."
+}

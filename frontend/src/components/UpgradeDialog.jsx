@@ -13,7 +13,7 @@ export function UpgradeDialog({ open, onOpenChange, message }) {
           </div>
           <DialogTitle>You're out of briefs this month</DialogTitle>
           <DialogDescription data-testid="upgrade-dialog-message">
-            {message || "You've used every brief on your plan."} Upgrade to keep preparing for meetings.
+            {message || "You've used every brief on your plan."}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">

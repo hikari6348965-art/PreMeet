@@ -14,10 +14,17 @@ MVP Phase 1: JWT email+password auth, onboarding, manual meeting + notes entry, 
 
 ## Mocked / not configured
 - Calendar/CRM/Email OAuth: show "Setup required" (no credentials)
-- Razorpay: backend ready, falls back to TEST MODE without keys; frontend upgrade UI NOT built yet
+- Razorpay: LIVE integration with user's TEST keys (rzp_test). Prices shown USD, charged INR at fixed rate 88 (billing.USD_INR_RATE). One-time 30-day payments, no auto-renew.
+
+## Billing (2026-06, session 3)
+- /app/billing page (plans, current plan, payment history, downgrade confirm), Razorpay Checkout.js (lib/checkout.js)
+- Orders stored in db.payment_orders; verify uses stored plan; idempotent; webhook payment.captured/order.paid activates (amount checked)
+- Paid plans expire after 30 days -> auto-downgrade to free
+- Upgrade dialog on 402 quota exceeded; landing pricing shows INR note
+- Tests: iteration_2 + fixes; 28/28 backend pytest pass
 
 ## Backlog
-- P1: Razorpay upgrade/pricing UI on frontend
+- P1: Renewal reminder email before 30-day period ends
 - P1: Swap native select/checkbox/datetime for shadcn components
 - P2: Background job for auto brief generation, email notifications for ready briefs, Google/Outlook calendar OAuth
 - P3: CRM integrations (HubSpot/Salesforce), forgotten-commitment detection

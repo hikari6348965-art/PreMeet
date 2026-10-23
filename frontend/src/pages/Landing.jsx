@@ -195,8 +195,10 @@ export default function Landing() {
             {plans.map((p) => (
               <div key={p.id} data-testid={`pricing-card-${p.id}`}
                 className={`p-6 rounded-2xl border bg-card flex flex-col ${p.id === "entry" ? "border-primary shadow-lg shadow-primary/10 ring-1 ring-primary" : "border-border"}`}>
-                {p.id === "entry" && <span className="self-start mb-3 px-2.5 py-1 rounded-full bg-primary text-white text-xs font-semibold">Most popular</span>}
-                <h3 className="font-bold text-lg">{p.name}</h3>
+                <div className="flex items-center justify-between min-h-6">
+                  <h3 className="font-bold text-lg">{p.name}</h3>
+                  {p.id === "entry" && <span className="px-2.5 py-1 rounded-full bg-primary text-white text-xs font-semibold">Most popular</span>}
+                </div>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-4xl font-extrabold tracking-tight">${p.price_monthly}</span>
                   <span className="text-muted-foreground text-sm">/mo</span>

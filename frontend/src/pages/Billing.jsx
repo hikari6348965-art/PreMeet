@@ -5,6 +5,10 @@ import { Card, PageHeader, StatusBadge, formatDateTime } from "../components/ui-
 import { PlanCard } from "../components/PlanCard";
 import { toast } from "sonner";
 import { Loader2, Receipt, ShieldCheck } from "lucide-react";
+import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
+} from "../components/ui/alert-dialog";
 
 function CurrentPlan({ sub, usage }) {
   const used = usage?.usage?.briefs_generated ?? 0;
@@ -50,6 +54,7 @@ export default function Billing() {
   const [usage, setUsage] = useState(null);
   const [payments, setPayments] = useState([]);
   const [busy, setBusy] = useState("");
+  const [confirmFree, setConfirmFree] = useState(null);
 
   const load = useCallback(() => Promise.all([
     api.get("/plans").then(({ data }) => setPlans(data)),
@@ -59,7 +64,9 @@ export default function Billing() {
   ]).catch(() => toast.error("Couldn't load billing details")), []);
   useEffect(() => { load(); }, [load]);
 
-  const select = async (plan) => {
+  const select = async (plan, confirmed = false) => {
+    if (plan.price_monthly === 0 && sub.plan.price_monthly > 0 && !confirmed) { setConfirmFree(plan); return; }
+    setConfirmFree(null);
     setBusy(plan.id);
     try {
       const res = await startCheckout(plan.id);
@@ -89,6 +96,20 @@ export default function Billing() {
         <ShieldCheck className="h-3.5 w-3.5" /> Prices in USD; payments are processed securely by Razorpay in INR. Each payment covers 30 days.
       </p>
       <PaymentHistory rows={payments} />
+      <AlertDialog open={!!confirmFree} onOpenChange={(o) => !o && setConfirmFree(null)}>
+        <AlertDialogContent data-testid="downgrade-confirm-dialog">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Switch to the free plan?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll lose the rest of your paid {sub.plan.name} period right away, and your brief allowance drops to {confirmFree?.brief_allowance} a month. This can't be refunded.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="downgrade-cancel-btn">Keep {sub.plan.name}</AlertDialogCancel>
+            <AlertDialogAction data-testid="downgrade-confirm-btn" onClick={() => select(confirmFree, true)}>Switch to free</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
