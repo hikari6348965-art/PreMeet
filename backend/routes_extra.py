@@ -135,6 +135,11 @@ async def guest_join(meeting_id: str, payload: GuestJoin):
 # ============ MEETING NOTES ============
 async def _notes(meeting_id: str, user_id: str) -> dict:
     n = await db.meeting_notes.find_one({"meeting_id": meeting_id, "user_id": user_id}, {"_id": 0})
+    stale = (datetime.now(timezone.utc) - timedelta(minutes=20)).isoformat()
+    if n and n.get("status") in ("waiting", "transcribing", "extracting") and n.get("updated_at", "") < stale:
+        n["status"], n["error"] = "failed", "Processing was interrupted. Please upload the recording again."
+        await db.meeting_notes.update_one({"meeting_id": meeting_id, "user_id": user_id},
+                                          {"$set": {"status": "failed", "error": n["error"]}})
     return n or {"meeting_id": meeting_id, "user_id": user_id, "status": "none", "ai": None,
                  "manual": "", "transcript": ""}
 
@@ -171,8 +176,15 @@ async def _finish(meeting: dict, user_id: str, transcript: str, recording_ids=No
         await _set_status(mid, user_id, status="failed", error="The recording had no speech to transcribe.")
         return
     await _set_status(mid, user_id, status="extracting", transcript=transcript)
-    ai = await vs.extract_notes(transcript, meeting)
+    try:
+        ai = await vs.extract_notes(transcript, meeting)
+    except Exception as e:
+        logger.exception(f"Note extraction failed for {mid}: {e}")
+        await _set_status(mid, user_id, status="failed",
+                          error="The call was transcribed, but pulling out the notes failed. Please try again.")
+        return
     await _set_status(mid, user_id, status="ready", ai=ai, error=None, recording_ids=recording_ids or [])
+    await db.commitments.delete_many({"user_id": user_id, "meeting_id": mid, "source": {"$regex": "^Call: "}})
     for a in ai.get("action_items", [])[:20]:
         await db.commitments.insert_one({
             "id": new_id(), "user_id": user_id, "contact_id": meeting.get("contact_id"),

@@ -81,7 +81,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative overflow-hidden border-b border-border">
         <div className="bc-grid-bg absolute inset-0 opacity-50" />
-        <div className="relative max-w-6xl mx-auto px-5 pt-16 pb-20 sm:pt-24 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
+        <div className="relative max-w-6xl mx-auto px-5 pt-16 pb-32 sm:pt-24 grid lg:grid-cols-[1.1fr_0.9fr] gap-12 items-center">
           <div>
             <span className="bc-rise inline-flex items-center gap-2 px-3 py-1 rounded-full bg-ink text-white text-xs font-mono-label">
               <span className="h-1.5 w-1.5 rounded-full bg-signal bc-blink" /> Prep · Call · Notes
@@ -124,7 +124,7 @@ export default function Landing() {
                 ))}
               </div>
             </div>
-            <div className="absolute -bottom-8 -left-6 sm:-left-10 w-60 rounded-xl bg-ink text-white p-4 shadow-xl bc-rise bc-d6 bc-grain overflow-hidden">
+            <div className="absolute -bottom-24 right-4 sm:-right-6 w-60 rounded-xl bg-ink text-white p-4 shadow-xl bc-rise bc-d6 bc-grain overflow-hidden">
               <div className="flex items-center gap-2 text-xs font-bold"><span className="h-2 w-2 rounded-full bg-signal bc-blink" /> REC · 24:13</div>
               <p className="mt-2 text-sm leading-snug">Decision: phased rollout starts in March.</p>
               <p className="mt-1 text-xs text-white/60">Action · Dana to share ERP specs by Friday</p>
@@ -133,7 +133,7 @@ export default function Landing() {
         </div>
         <div className="relative border-t border-border bg-card overflow-hidden py-3">
           <div className="flex w-max bc-marquee gap-10 text-sm font-semibold text-muted-foreground">
-            {[...Array(2)].flatMap((_, k) => ["Google Calendar", "Gmail", "Built-in video calls", "Call recording", "Auto-extracted notes", "PDF export", "Source citations", "Commitment tracking"].map((n) => (
+            {[...Array(2)].flatMap((_, k) => ["Google Calendar", "Gmail", "Built-in video calls", "Recording upload", "Auto-extracted notes", "PDF export", "Source citations", "Commitment tracking"].map((n) => (
               <span key={`${k}-${n}`} className="flex items-center gap-2 whitespace-nowrap"><span className="h-1.5 w-1.5 rotate-45 bg-primary" />{n}</span>
             )))}
           </div>
@@ -146,7 +146,7 @@ export default function Landing() {
           {[
             { n: "01", t: "Before", d: "A one-page brief built from your calendar, Gmail threads and past call notes. Every fact shows where it came from.", icon: FileText },
             { n: "02", t: "During", d: "Run the call in a built-in video room. Share one link with your attendees. Nothing to install.", icon: Video },
-            { n: "03", t: "After", d: "The recording is transcribed, and decisions, action items and key details land in your notes. Export a PDF.", icon: ListChecks },
+            { n: "03", t: "After", d: "Upload the call recording. It is transcribed, and decisions, action items and key details land in your notes. Export a PDF.", icon: ListChecks },
           ].map((s, i) => (
             <div key={s.n} className={`p-7 bg-card ${i < 2 ? "md:border-r-2 border-b-2 md:border-b-0 border-ink" : ""} hover:bg-accent/50 transition-colors`} data-testid={`flow-step-${s.n}`}>
               <div className="flex items-center justify-between">

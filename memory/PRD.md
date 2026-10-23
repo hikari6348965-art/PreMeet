@@ -29,3 +29,14 @@ MVP Phase 1: JWT email+password auth, onboarding, manual meeting + notes entry, 
 - P2: Background job for auto brief generation, email notifications for ready briefs, Google/Outlook calendar OAuth
 - P3: CRM integrations (HubSpot/Salesforce), forgotten-commitment detection
 - Tech: split server.py into routers
+
+## Session 3 (2026-06): Email, Google, Video, Notes, Redesign
+- Brief-ready emails (Emergent managed Resend, email_service.py); auto after generation if preference on; POST /api/briefs/{id}/email (409 while sending, 60s limit after sent)
+- Google Calendar + Gmail OAuth (google_service.py, routes_extra.py): /api/integrations/{google_calendar|gmail}/connect -> authorization_url; callback /api/integrations/google/callback; POST /api/integrations/google/sync imports 30 days of events; Gmail thread snippets added to brief context. Refresh token Fernet-encrypted (key from JWT_SECRET).
+  - BLOCKER (user config): add redirect URI https://meeting-brief-8.preview.emergentagent.com/api/integrations/google/callback (+ prod domain) in Google Cloud OAuth client; add test users.
+- Video rooms (Daily.co, video_service.py): POST /api/meetings/{id}/room, guest invite /join/:meetingId?k=, POST /api/public/rooms/{id}/join. Daily plan has no cloud recording -> rooms created without recording (cached flag).
+  - BLOCKER (user config): Daily account needs a payment method; joins fail with account-missing-payment-method.
+- Meeting notes: GET/PUT /api/meetings/{id}/notes (manual), POST .../notes/upload (Emergent object storage -> imageio-ffmpeg -> whisper-1 -> Claude extraction -> action items to commitments, deduped), POST .../notes/process (Daily cloud recording, only when plan allows), GET .../notes/pdf (reportlab). Stale processing >20min auto-fails.
+- Redesign "Crisp and confident": Space Grotesk display, ink #0B0F1A, indigo primary, signal lime #C6F432, dark sidebar, hard-shadow cards, marquee, staggered rises.
+- Tests: iteration_4 + fixes; backend pytest all pass.
+- Outlook/HubSpot/Salesforce: "Coming soon" (need developer apps)

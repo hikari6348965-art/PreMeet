@@ -30,15 +30,22 @@ async def daily(method: str, path: str, **kw) -> dict:
     return r.json()
 
 
+_can_record = None
+
+
 async def create_room(name: str, exp: int) -> tuple[dict, bool]:
+    global _can_record
     props = {"exp": exp, "enable_prejoin_ui": True, "enable_chat": True, "enable_screenshare": True}
-    try:
-        room = await daily("POST", "/rooms", json={"name": name, "privacy": "private",
-                                                   "properties": {**props, "enable_recording": "cloud-audio-only"}})
-        return room, True
-    except httpx.HTTPStatusError as e:
-        if "current plan" not in e.response.text:
-            raise
+    if _can_record is not False:
+        try:
+            room = await daily("POST", "/rooms", json={"name": name, "privacy": "private",
+                                                       "properties": {**props, "enable_recording": "cloud-audio-only"}})
+            _can_record = True
+            return room, True
+        except httpx.HTTPStatusError as e:
+            if "current plan" not in e.response.text:
+                raise
+            _can_record = False
     return await daily("POST", "/rooms", json={"name": name, "privacy": "private", "properties": props}), False
 
 

@@ -132,7 +132,7 @@ export default function BriefViewer() {
             <span className="flex items-center gap-3">
               <span className="h-10 w-10 rounded-lg bg-signal text-ink flex items-center justify-center"><Video className="h-5 w-5" /></span>
               <span><span className="block font-display font-bold">Join video call</span>
-                <span className="block text-xs text-white/60">Recorded calls get notes automatically</span></span>
+                <span className="block text-xs text-white/60">Share one link · add notes after</span></span>
             </span>
             <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </Link>

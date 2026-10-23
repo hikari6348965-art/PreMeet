@@ -38,7 +38,7 @@ export default function GuestJoin() {
             <form onSubmit={join} className="w-full max-w-sm bc-rise">
               <Video className="h-8 w-8 text-signal" />
               <h1 className="mt-4 text-3xl font-bold">Join the call</h1>
-              <p className="mt-2 text-white/60 text-sm">This call may be recorded to create meeting notes for the host.</p>
+              <p className="mt-2 text-white/60 text-sm">You're joining a video call hosted on BriefCraft. The host may take notes from this call.</p>
               <input value={name} onChange={(e) => setName(e.target.value)} required maxLength={60} placeholder="Your name"
                 data-testid="guest-name-input"
                 className="mt-6 w-full h-11 rounded-lg bg-white/5 border border-white/15 px-3 text-sm placeholder:text-white/40 focus:outline-none focus:border-signal" />

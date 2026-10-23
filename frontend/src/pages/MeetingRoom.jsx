@@ -60,7 +60,7 @@ export default function MeetingRoom() {
             <div className="h-full rounded-xl bg-ink text-white relative overflow-hidden bc-grain flex flex-col items-center justify-center text-center p-8">
               <div className="h-14 w-14 rounded-2xl bg-signal text-ink flex items-center justify-center"><Video className="h-7 w-7" /></div>
               <h2 className="mt-5 text-2xl font-bold">Ready when you are</h2>
-              <p className="mt-2 text-white/70 max-w-sm text-sm">Start the room, then share the invite link with your attendees. When the call ends, notes are extracted automatically.</p>
+              <p className="mt-2 text-white/70 max-w-sm text-sm">Start the room, then share the invite link with your attendees. After the call, upload the recording and BriefCraft pulls out the decisions and action items.</p>
               <button onClick={start} disabled={starting} data-testid="room-start-btn"
                 className="mt-6 h-11 px-6 rounded-lg bg-signal text-ink font-bold flex items-center gap-2 hover:brightness-95 transition active:scale-[0.98] disabled:opacity-60">
                 {starting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4" />} Start the call

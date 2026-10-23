@@ -1,0 +1,54 @@
+{
+  "summary": "Tested the video room (Daily), guest join, meeting notes (manual, upload -> whisper-1 -> Claude extraction, PDF), Google OAuth connect, the Integrations page and the landing redesign, and ran the regression suites. All backend tests pass (13 new, plus 48 regression after updating 1 stale test). I found and fixed one critical frontend bug in VideoFrame: under React StrictMode the Daily iframe crashed with 'Duplicate DailyIframe instances are not allowed'. Two blockers remain, and both are account/config issues: (1) the Daily account gives 'account-missing-payment-method', so no one can actually join a call; (2) Google OAuth returns redirect_uri_mismatch because the callback URI is not registered in Google Cloud Console.",
+  "backend_issues": {
+    "critical": [
+      {"endpoint": "Daily account (premeet.daily.co)", "issue": "Rooms and tokens are created (200), but joining in the browser fails: 'Meeting ended in error: account-missing-payment-method'. Daily shows a 'Missing payment method' card. Nobody (host or guest) can hold a call until a payment method is added in the Daily dashboard.", "priority": "CRITICAL"},
+      {"endpoint": "POST /api/integrations/google_calendar/connect -> accounts.google.com", "issue": "Google returns Error 400 redirect_uri_mismatch. https://meeting-brief-8.preview.emergentagent.com/api/integrations/google/callback is not an Authorized redirect URI on the GOOGLE_CLIENT_ID OAuth client. The backend URL itself is correct.", "priority": "CRITICAL"}
+    ],
+    "minor": [
+      {"endpoint": "POST /api/meetings/{id}/room", "issue": "Every new room first tries enable_recording=cloud-audio-only and gets a 400 'current plan' error from Daily before retrying, so 2 Daily calls and an ERROR log line per room. Consider caching the 'plan can't record' result or using an env flag."},
+      {"endpoint": "_process_upload/_finish (routes_extra.py)", "issue": "If Claude extraction or JSON parsing fails, the user sees the misleading error 'We couldn't read that file...' even though the transcript succeeded. Notes status can also get stuck in transcribing/extracting if the backend restarts mid-task (background task is lost). Upload then returns 409 forever, with no timeout or stale-state recovery."},
+      {"endpoint": "_finish (routes_extra.py)", "issue": "Re-uploading a recording for the same meeting adds duplicate commitments each time (no dedupe by meeting_id)."},
+      {"endpoint": "POST /api/meetings/{id}/notes/upload", "issue": "Buffers up to 300 MB fully in memory before uploading to storage."}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "VideoFrame", "issue": "FIXED BY TESTER: the destroy()+createFrame pattern crashed under React StrictMode ('Duplicate DailyIframe instances are not allowed'), so the room page showed the Emergent runtime error overlay after clicking Start. Fix: allowMultipleCallInstances:true plus an 'active' guard so events from the discarded StrictMode instance are ignored.", "selector": "[data-testid='video-frame']", "priority": "CRITICAL"},
+      {"component": "GuestJoin", "issue": "When the Daily call ends in error (e.g. account-missing-payment-method), left-meeting fires and the guest sees 'You've left the call. Thanks for joining.' instead of an error message.", "selector": "[data-testid='guest-left-message']", "priority": "MEDIUM"},
+      {"component": "VideoFrame error overlay", "issue": "The generic 'Couldn't join the call.' overlay (video-error) draws on top of Daily's own error card, and its icon overlaps Daily's text. Map Daily errorMsg (e.g. account-missing-payment-method) to a clear message, and hide either the overlay or the Daily card.", "selector": "[data-testid='video-error']", "priority": "LOW"}
+    ],
+    "integration_issues": [
+      {"flow": "Integrations page ?google=expired", "issue": "The toast 'That connection attempt expired' shows twice (StrictMode double effect). Guard with a ref or clear the query param.", "affected_selectors": ["[data-sonner-toast]"]}
+    ],
+    "design_issues": [
+      {"screen": "Copy accuracy", "issues": ["MeetingRoom says 'When the call ends, notes are extracted automatically', BriefViewer's Join card says 'Recorded calls get notes automatically', and the guest page says 'This call may be recorded'. Recording is off (Daily plan), so these are misleading. Say 'Upload a recording after the call'.", "The landing marquee lists 'Call recording', which isn't available on the current plan."]},
+      {"screen": "Landing hero (desktop 1280)", "issues": ["The floating 'REC · 24:13' card covers the 3rd bullet of the brief preview card ('Ask who signs off on the ERP timeline' is hidden)."]}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_video_notes_google.py", "/app/backend/tests/make_test_audio.py", "/app/backend/tests/setup_video_ui_user.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "USER/CONFIG: add a payment method to the Daily account (Daily dashboard -> Billing). Until then, all calls fail with account-missing-payment-method.",
+    "USER/CONFIG: in Google Cloud Console -> Credentials -> OAuth client, add the Authorized redirect URI https://meeting-brief-8.preview.emergentagent.com/api/integrations/google/callback (and the production domain). Also add test users if the consent screen is in Testing mode, because gmail.readonly is a restricted scope.",
+    "Review the tester's VideoFrame.jsx fix (allowMultipleCallInstances + active guard).",
+    "GuestJoin/VideoFrame: show a proper error when the Daily call ends in error, instead of the 'left' message.",
+    "Fix the copy that promises automatic recording/notes while recording is disabled.",
+    "Add stale-processing recovery (e.g. treat transcribing/extracting older than 15 min as failed) and a separate error message for extraction failures.",
+    "Dedupe commitments on re-upload for the same meeting.",
+    "Dedupe the ?google= toast on the Integrations page."
+  ],
+  "critical_code_review_comments": [
+    "routes_extra.py: background tasks are in-process only (asyncio.create_task). A restart leaves meeting_notes stuck in a BUSY status, and upload returns 409 forever.",
+    "video_service.create_room: a 'current plan' retry on every room creation means a wasted request and an ERROR log each time.",
+    "upload_recording reads the whole file (up to 300 MB) into memory.",
+    "server.py is 859 lines, which is over the 700-line guideline. Consider splitting it."
+  ],
+  "updated_files": ["/app/frontend/src/components/VideoFrame.jsx", "/app/backend/tests/test_briefcraft_api.py", "/app/backend/tests/test_video_notes_google.py", "/app/backend/tests/make_test_audio.py", "/app/backend/tests/setup_video_ui_user.py"],
+  "success_rate": {"backend": "100% (61/61 pytest after updating 1 stale test). Live call join is blocked by the Daily account, and Google consent by the OAuth config.", "frontend": "~85%. All listed elements render and work: notes save/persist, PDF download, room start, Not recording badge, copy invite, guest invalid-key error, integrations badges/redirect, landing at 1280/390. The live call can't connect (Daily account), and the guest sees the wrong 'left' message."},
+  "seed_data_creation": "Temporary test_vnotes_*/test_vnui_* users, created and then deleted. Created about 3 real Daily rooms (they expire in 7 days). Audio fixture: run `python tests/make_test_audio.py` to make /tmp/test_meeting.mp3 (TTS).",
+  "retest_needed": true,
+  "should_main_agent_self_test": true,
+  "test_credentials": "admin@briefcraft.ai / Admin@12345 (from /app/memory/test_credentials.md). UI tests used freshly registered users with onboarded=true set in the DB and bc_token in localStorage.",
+  "context_for_next_testing_agent": "Run tests/make_test_audio.py before test_video_notes_google.py, because the upload pipeline test needs /tmp/test_meeting.mp3. The whisper+Claude pipeline reaches 'ready' in about 10s. setup_video_ui_user.py makes a user with ready AI notes; then set onboarded=true in the DB to skip onboarding. Once the Daily payment method is added, retest the actual join (host + guest). Once the redirect URI is registered, Google consent still needs a manual test.",
+  "rca of the issue": "VideoFrame crash: React 18/19 StrictMode runs effects mount->cleanup->mount. frame.destroy() is async, so the second createFrame saw the existing instance and threw. Daily join failure: the Daily API returns errorMsg account-missing-payment-method at join time (seen in console). Google: decoding Google's authError showed redirect_uri_mismatch for .../api/integrations/google/callback."
+}

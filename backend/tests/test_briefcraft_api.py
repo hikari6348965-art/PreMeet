@@ -160,7 +160,8 @@ def test_integrations(user_ctx):
     s = bearer(user_ctx["token"])
     rows = s.get(f"{API}/integrations").json()
     assert len(rows) > 0
-    oauth = [r for r in rows if r.get("requires_oauth")]
+    # Google providers now use a real OAuth redirect (covered in test_video_notes_google.py)
+    oauth = [r for r in rows if r.get("requires_oauth") and r["provider"] not in ("google_calendar", "gmail")]
     manual = [r for r in rows if not r.get("requires_oauth")]
     assert oauth and manual
     r = s.post(f"{API}/integrations/{oauth[0]['provider']}/connect").json()

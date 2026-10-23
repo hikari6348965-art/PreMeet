@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { Card, StatusBadge, PageHeader, formatDateTime } from "../components/ui-helpers";
@@ -60,9 +60,10 @@ export default function Integrations() {
 
   const load = () => api.get("/integrations").then(({ data }) => setRows(data));
   useEffect(() => { load().catch(() => toast.error("Couldn't load integrations")); }, []);
+  const shown = useRef("");
   useEffect(() => {
     const g = params.get("google");
-    if (g && RESULT[g]) { toast[RESULT[g][0]](RESULT[g][1]); setParams({}, { replace: true }); }
+    if (g && RESULT[g] && shown.current !== g) { shown.current = g; toast[RESULT[g][0]](RESULT[g][1]); setParams({}, { replace: true }); }
   }, [params, setParams]);
 
   const run = async (provider, fn) => {
