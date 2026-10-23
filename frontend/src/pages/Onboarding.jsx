@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { toast } from "sonner";
+import { Logo } from "../components/Logo";
 import {
   FileText, Briefcase, Target, Users, UserRound, ArrowRight, ArrowLeft,
   Check, Loader2, Sparkles,
@@ -55,10 +56,7 @@ export default function Onboarding() {
     <div className="min-h-screen bg-background flex flex-col">
       <div className="border-b border-border">
         <div className="max-w-2xl mx-auto px-5 h-16 flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-            <FileText className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="font-bold text-lg tracking-tight">PreMeet</span>
+          <Logo tone="ink" className="h-7" />
         </div>
       </div>
 

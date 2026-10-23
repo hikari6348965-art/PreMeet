@@ -5,6 +5,7 @@ import {
   ShieldCheck, LogOut, FileText, Menu, X, CreditCard,
 } from "lucide-react";
 import { useState } from "react";
+import { Logo } from "../Logo";
 
 const nav = [
   { to: "/app", icon: LayoutDashboard, label: "Dashboard", end: true, testid: "nav-dashboard" },
@@ -26,10 +27,7 @@ export default function DashboardLayout() {
   const navContent = (
     <>
       <div className="flex items-center gap-2 px-5 py-5 border-b border-white/10">
-        <div className="h-8 w-8 rounded-lg bg-signal flex items-center justify-center">
-          <FileText className="h-4 w-4 text-ink" />
-        </div>
-        <span className="font-display font-bold text-lg tracking-tight text-white">PreMeet</span>
+        <Logo tone="white" className="h-7" />
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
         {nav.map((item) => (
@@ -102,10 +100,7 @@ export default function DashboardLayout() {
       <div className="flex-1 lg:ml-64 flex flex-col min-w-0">
         <header className="lg:hidden sticky top-0 z-20 flex items-center justify-between px-4 h-14 border-b border-border bg-card/80 backdrop-blur">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-              <FileText className="h-3.5 w-3.5 text-primary-foreground" />
-            </div>
-            <span className="font-bold tracking-tight">PreMeet</span>
+            <Logo tone="ink" className="h-6" testid="mobile-header-logo" />
           </div>
           <button onClick={() => setOpen(!open)} data-testid="mobile-menu-toggle" className="p-2">
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}

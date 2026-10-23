@@ -3,6 +3,7 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { VideoFrame } from "../components/VideoFrame";
 import { FileText, Loader2, Video } from "lucide-react";
+import { Logo } from "../components/Logo";
 
 export default function GuestJoin() {
   const { meetingId } = useParams();
@@ -24,8 +25,7 @@ export default function GuestJoin() {
   return (
     <div className="min-h-screen bg-ink text-white flex flex-col" data-testid="guest-join-page">
       <header className="px-6 h-16 flex items-center gap-2 border-b border-white/10">
-        <div className="h-8 w-8 rounded-lg bg-signal text-ink flex items-center justify-center"><FileText className="h-4 w-4" /></div>
-        <span className="font-display font-bold text-lg">PreMeet</span>
+        <Logo tone="white" className="h-7" />
         {room && <span className="ml-3 text-sm text-white/60 truncate">{room.title}</span>}
       </header>
       {room && !left ? (

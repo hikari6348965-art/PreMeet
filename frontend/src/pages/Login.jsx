@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { formatApiErrorDetail } from "../lib/api";
 import { FileText, Loader2, CheckCircle2 } from "lucide-react";
 import { GoogleButton, OrDivider } from "../components/GoogleButton";
+import { Logo } from "../components/Logo";
 
 export default function Login() {
   const { login } = useAuth();
@@ -26,13 +27,10 @@ export default function Login() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2 bg-background">
-      <div className="hidden lg:flex flex-col justify-between bg-[#0F172A] text-white p-12 relative overflow-hidden">
+      <div className="hidden lg:flex flex-col justify-between bg-ink text-white p-12 relative overflow-hidden">
         <div className="bc-grid-bg absolute inset-0 opacity-[0.06]" />
-        <Link to="/" className="relative flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
-            <FileText className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-xl tracking-tight">PreMeet</span>
+        <Link to="/" className="relative flex items-center" data-testid="login-brand-link">
+          <Logo tone="white" className="h-9" testid="login-panel-logo" />
         </Link>
         <div className="relative space-y-6">
           <h2 className="text-4xl font-extrabold tracking-tight leading-tight">
@@ -55,10 +53,7 @@ export default function Login() {
       <div className="flex items-center justify-center p-6 sm:p-12">
         <div className="w-full max-w-sm">
           <div className="lg:hidden mb-8 flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-              <FileText className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">PreMeet</span>
+            <Logo tone="ink" className="h-7" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
           <p className="text-muted-foreground mt-1 mb-6 text-sm">Sign in to your workspace.</p>

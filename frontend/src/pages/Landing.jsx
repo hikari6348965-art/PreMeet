@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { Logo } from "../components/Logo";
 import {
   FileText, ArrowRight, CalendarClock, Database, ListChecks, ShieldCheck,
   Sparkles, Quote, Check, ChevronDown, Link2, AlertTriangle, Target, Video,
@@ -58,10 +59,7 @@ export default function Landing() {
       <header className="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-5 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-ink flex items-center justify-center">
-              <FileText className="h-4 w-4 text-signal" />
-            </div>
-            <span className="font-bold text-lg tracking-tight">PreMeet</span>
+            <Logo tone="ink" className="h-7" />
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
             <a href="#features" className="hover:text-foreground transition">Features</a>
@@ -315,12 +313,7 @@ export default function Landing() {
 
       <footer className="border-t border-border">
         <div className="max-w-6xl mx-auto px-5 py-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded bg-primary flex items-center justify-center">
-              <FileText className="h-3 w-3 text-white" />
-            </div>
-            <span className="font-semibold text-foreground">PreMeet</span>
-          </div>
+          <Logo tone="ink" className="h-6" testid="footer-logo" />
           <p>© {new Date().getFullYear()} PreMeet. Walk into every meeting prepared.</p>
         </div>
       </footer>

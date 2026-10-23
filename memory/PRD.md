@@ -46,3 +46,4 @@ MVP Phase 1: JWT email+password auth, onboarding, manual meeting + notes entry, 
 - Google login/signup (Emergent managed): POST /api/auth/google-session links by email, issues app JWT. AuthCallback on /app#session_id. See /app/auth_testing.md.
 - Microsoft/Outlook integration: removed at user request (none written). MICROSOFT_CLIENT_ID/SECRET secrets exist but unused.
 - Tests iteration_5: all pass except brief emails failing due to Emergent email insufficient_credits (environment).
+- Logo (2026-06): user-supplied PreMeet logo processed into /app/frontend/public/brand/ (logo-white.png, logo-ink.png, mark-*.png, favicon.png, apple-touch-icon.png). Rendered via components/Logo.jsx across landing nav/footer, login/register, onboarding, app sidebar, mobile header, guest join. Favicon + meta description updated in index.html.
