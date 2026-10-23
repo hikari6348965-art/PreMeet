@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import {
   FileText, ArrowRight, CalendarClock, Database, ListChecks, ShieldCheck,
   Sparkles, Quote, Check, ChevronDown, Link2, AlertTriangle, Target,
@@ -49,6 +50,7 @@ function FaqItem({ q, a, i }) {
 export default function Landing() {
   const [activeTab, setActiveTab] = useState("Background");
   const [plans, setPlans] = useState([]);
+  const { user } = useAuth();
 
   useEffect(() => { api.get("/plans").then(({ data }) => setPlans(data)).catch(() => {}); }, []);
 
@@ -199,6 +201,9 @@ export default function Landing() {
                   <span className="text-4xl font-extrabold tracking-tight">${p.price_monthly}</span>
                   <span className="text-muted-foreground text-sm">/mo</span>
                 </div>
+                <p className="mt-1 text-xs text-muted-foreground" data-testid={`pricing-inr-${p.id}`}>
+                  {p.price_inr ? `Charged as ₹${p.price_inr.toLocaleString("en-IN")} via Razorpay` : "No card needed"}
+                </p>
                 <ul className="mt-6 space-y-2.5 flex-1">
                   {p.features?.map((f) => (
                     <li key={f} className="flex items-start gap-2.5 text-sm">
@@ -206,7 +211,7 @@ export default function Landing() {
                     </li>
                   ))}
                 </ul>
-                <Link to="/register" className={`mt-6 h-11 rounded-lg font-semibold text-sm flex items-center justify-center transition-all active:scale-[0.98] ${p.id === "entry" ? "bg-primary text-white hover:bg-[hsl(200_98%_32%)]" : "border border-border hover:border-primary/40"}`}>
+                <Link to={user ? "/app/billing" : "/register"} data-testid={`pricing-cta-${p.id}`} className={`mt-6 h-11 rounded-lg font-semibold text-sm flex items-center justify-center transition-all active:scale-[0.98] ${p.id === "entry" ? "bg-primary text-white hover:bg-[hsl(200_98%_32%)]" : "border border-border hover:border-primary/40"}`}>
                   Get started
                 </Link>
               </div>

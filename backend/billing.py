@@ -18,6 +18,13 @@ def get_client():
         return None
 
 
+USD_INR_RATE = 88
+
+
+def usd_to_inr(usd: float) -> float:
+    return round(usd * USD_INR_RATE, 2)
+
+
 def is_configured() -> bool:
     return get_client() is not None
 

@@ -59,6 +59,9 @@ async def get_plan_for_user(user_id: str) -> dict:
     if not sub:
         await seed.ensure_user_subscription(user_id)
         sub = await db.subscriptions.find_one({"user_id": user_id})
+    if sub["plan_id"] != "free" and sub.get("current_period_end") and sub["current_period_end"] < now_iso():
+        await db.subscriptions.update_one({"user_id": user_id}, {"$set": {"plan_id": "free", "status": "expired"}})
+        sub = await db.subscriptions.find_one({"user_id": user_id})
     plan = await db.plans.find_one({"id": sub["plan_id"]}, {"_id": 0})
     sub.pop("_id", None)
     return {"plan": plan, "subscription": sub}
@@ -579,6 +582,8 @@ async def usage_endpoint(user=Depends(authmod.get_current_user)):
 @api.get("/plans")
 async def get_plans():
     plans = await db.plans.find({}, {"_id": 0}).sort("order", 1).to_list(20)
+    for p in plans:
+        p["price_inr"] = billing.usd_to_inr(p["price_monthly"])
     return plans
 
 
@@ -604,9 +609,17 @@ async def subscribe(payload: SubscribeInput, user=Depends(authmod.get_current_us
                 "message": "Payments are not configured yet. Plan activated in TEST MODE (no real charge).",
                 "plan_id": payload.plan_id}
 
-    # Real Razorpay order (amount in INR ~ USD*88 for demo conversion)
-    amount_inr = round(plan["price_monthly"] * 88, 2)
-    order = billing.create_order(amount_inr, f"sub_{user['id'][:8]}_{payload.plan_id}")
+    amount_inr = billing.usd_to_inr(plan["price_monthly"])
+    try:
+        order = billing.create_order(amount_inr, f"sub_{user['id'][:8]}_{payload.plan_id}")
+    except Exception as e:
+        logger.error(f"Razorpay order creation failed: {e}")
+        raise HTTPException(status_code=502, detail="Couldn't start the payment. Please try again.")
+    await db.payment_orders.insert_one({
+        "id": new_id(), "order_id": order["id"], "user_id": user["id"], "plan_id": payload.plan_id,
+        "plan_name": plan["name"], "amount_inr": amount_inr, "price_usd": plan["price_monthly"],
+        "status": "created", "created_at": now_iso(),
+    })
     return {"ok": True, "mode": "razorpay", "order": order,
             "key_id": os.environ.get("RAZORPAY_KEY_ID"), "amount": order["amount"],
             "plan_id": payload.plan_id, "user_name": user.get("name"), "user_email": user.get("email")}
@@ -614,12 +627,31 @@ async def subscribe(payload: SubscribeInput, user=Depends(authmod.get_current_us
 
 @api.post("/billing/verify")
 async def verify_payment(payload: VerifyPaymentInput, user=Depends(authmod.get_current_user)):
+    order = await db.payment_orders.find_one({"order_id": payload.razorpay_order_id, "user_id": user["id"]})
+    if not order:
+        raise HTTPException(status_code=404, detail="Order not found")
     if not billing.verify_payment_signature(payload.razorpay_order_id,
                                             payload.razorpay_payment_id, payload.razorpay_signature):
+        await db.payment_orders.update_one({"order_id": payload.razorpay_order_id}, {"$set": {"status": "failed"}})
         raise HTTPException(status_code=400, detail="Payment verification failed")
-    await _activate_plan(user["id"], payload.plan_id, provider="razorpay",
-                         order_id=payload.razorpay_order_id, payment_id=payload.razorpay_payment_id)
-    return {"ok": True}
+    await _mark_order_paid(order, payload.razorpay_payment_id)
+    return {"ok": True, "plan_id": order["plan_id"]}
+
+
+async def _mark_order_paid(order: dict, payment_id: str):
+    res = await db.payment_orders.update_one(
+        {"order_id": order["order_id"], "status": {"$ne": "paid"}},
+        {"$set": {"status": "paid", "payment_id": payment_id, "paid_at": now_iso()}})
+    if res.modified_count:
+        await _activate_plan(order["user_id"], order["plan_id"], provider="razorpay",
+                             order_id=order["order_id"], payment_id=payment_id)
+
+
+@api.get("/billing/payments")
+async def list_payments(user=Depends(authmod.get_current_user)):
+    rows = await db.payment_orders.find({"user_id": user["id"], "status": {"$in": ["paid", "failed"]}},
+                                        {"_id": 0}).sort("created_at", -1).to_list(50)
+    return rows
 
 
 @api.post("/billing/cancel")
@@ -653,6 +685,11 @@ async def razorpay_webhook(request: Request):
     import json
     event = json.loads(body)
     logger.info(f"Razorpay webhook: {event.get('event')}")
+    if event.get("event") in ("payment.captured", "order.paid"):
+        pay = event.get("payload", {}).get("payment", {}).get("entity", {})
+        order = await db.payment_orders.find_one({"order_id": pay.get("order_id")})
+        if order:
+            await _mark_order_paid(order, pay.get("id"))
     return {"status": "processed"}
 
 

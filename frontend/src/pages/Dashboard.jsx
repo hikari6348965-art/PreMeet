@@ -110,7 +110,7 @@ export default function Dashboard() {
               <div className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-destructive" : "bg-primary"}`} style={{ width: `${pct}%` }} />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">{Math.max(0, plan.brief_allowance - usage.briefs_generated)} remaining this month</p>
-            <Link to="/app/settings" className="mt-4 w-full h-10 rounded-lg border border-border text-sm font-medium flex items-center justify-center gap-2 hover:border-primary/40 transition">
+            <Link to="/app/billing" data-testid="dashboard-manage-plan" className="mt-4 w-full h-10 rounded-lg border border-border text-sm font-medium flex items-center justify-center gap-2 hover:border-primary/40 transition">
               <Sparkles className="h-4 w-4 text-primary" /> Manage plan
             </Link>
           </Card>

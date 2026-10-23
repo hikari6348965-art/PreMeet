@@ -16,6 +16,7 @@ import ClientMemory from "./pages/ClientMemory";
 import Integrations from "./pages/Integrations";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
+import Billing from "./pages/Billing";
 
 function App() {
   useEffect(() => { document.title = "BriefCraft AI — Walk into every meeting prepared"; }, []);
@@ -36,6 +37,7 @@ function App() {
               <Route path="clients" element={<ClientMemory />} />
               <Route path="integrations" element={<Integrations />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="billing" element={<Billing />} />
               <Route path="admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
             </Route>
           </Routes>

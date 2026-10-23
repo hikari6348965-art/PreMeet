@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { Card, PageHeader, StatusBadge } from "../components/ui-helpers";
 import { useAuth } from "../context/AuthContext";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Loader2, Save } from "lucide-react";
 
@@ -44,6 +45,8 @@ function PlanCard({ usage }) {
       <div className="mt-3 h-2 rounded-full bg-secondary overflow-hidden">
         <div className="h-full bg-primary transition-[width] duration-500" style={{ width: `${pct}%` }} />
       </div>
+      <Link to="/app/billing" data-testid="settings-manage-billing"
+        className="mt-5 h-10 w-full rounded-lg border border-border text-sm font-medium flex items-center justify-center hover:border-primary/40 transition-colors">Manage plan</Link>
     </Card>
   );
 }

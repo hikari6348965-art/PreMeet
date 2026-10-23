@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { Card, StatusBadge, formatDateTime, meetingTypeLabel } from "../components/ui-helpers";
 import BriefContent from "../components/BriefContent";
+import { UpgradeDialog } from "../components/UpgradeDialog";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Printer, Copy, Users, Building2, FileText,
@@ -11,9 +12,9 @@ import {
 
 export default function BriefViewer() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [generating, setGenerating] = useState(false);
+  const [quotaMsg, setQuotaMsg] = useState("");
 
   const load = useCallback(() => api.get(`/meetings/${id}`).then(({ data }) => setData(data)), [id]);
   useEffect(() => { load().catch(() => toast.error("Meeting not found")); }, [load]);
@@ -27,9 +28,7 @@ export default function BriefViewer() {
     } catch (err) {
       const detail = err.response?.data?.detail;
       if (err.response?.status === 402) {
-        toast.error(detail?.message || "You've reached your monthly brief limit.", {
-          action: { label: "Upgrade", onClick: () => navigate("/app/settings") },
-        });
+        setQuotaMsg(detail?.message || "You've reached your monthly brief limit.");
       } else {
         toast.error(formatApiErrorDetail(detail) || "Brief generation failed.");
       }
@@ -61,6 +60,7 @@ export default function BriefViewer() {
 
   return (
     <div data-testid="brief-viewer-page">
+      <UpgradeDialog open={!!quotaMsg} onOpenChange={(o) => !o && setQuotaMsg("")} message={quotaMsg} />
       <Link to="/app/meetings" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 print:hidden">
         <ArrowLeft className="h-4 w-4" /> Back to meetings
       </Link>

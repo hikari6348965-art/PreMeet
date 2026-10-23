@@ -2,7 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard, CalendarClock, Users, Plug, Settings as SettingsIcon,
-  ShieldCheck, LogOut, FileText, Menu, X,
+  ShieldCheck, LogOut, FileText, Menu, X, CreditCard,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -11,6 +11,7 @@ const nav = [
   { to: "/app/meetings", icon: CalendarClock, label: "Meetings", testid: "nav-meetings" },
   { to: "/app/clients", icon: Users, label: "Client Memory", testid: "nav-clients" },
   { to: "/app/integrations", icon: Plug, label: "Integrations", testid: "nav-integrations" },
+  { to: "/app/billing", icon: CreditCard, label: "Billing", testid: "nav-billing" },
   { to: "/app/settings", icon: SettingsIcon, label: "Settings", testid: "nav-settings" },
 ];
 

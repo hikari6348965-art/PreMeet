@@ -156,7 +156,7 @@ class SubscribeInput(BaseModel):
 
 
 class VerifyPaymentInput(BaseModel):
-    plan_id: str
+    plan_id: Optional[str] = None
     razorpay_payment_id: str
     razorpay_order_id: str
     razorpay_signature: str
