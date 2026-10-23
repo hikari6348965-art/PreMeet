@@ -1,0 +1,48 @@
+import { useEffect } from "react";
+import "@/App.css";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner";
+import { AuthProvider } from "./context/AuthContext";
+import { ProtectedRoute, PublicOnly } from "./components/ProtectedRoute";
+import Landing from "./pages/Landing";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Onboarding from "./pages/Onboarding";
+import DashboardLayout from "./components/layout/DashboardLayout";
+import Dashboard from "./pages/Dashboard";
+import Meetings from "./pages/Meetings";
+import BriefViewer from "./pages/BriefViewer";
+import ClientMemory from "./pages/ClientMemory";
+import Integrations from "./pages/Integrations";
+import Settings from "./pages/Settings";
+import Admin from "./pages/Admin";
+
+function App() {
+  useEffect(() => { document.title = "BriefCraft AI — Walk into every meeting prepared"; }, []);
+  return (
+    <div className="App">
+      <AuthProvider>
+        <BrowserRouter>
+          <Toaster position="top-right" richColors />
+          <Routes>
+            <Route path="/" element={<Landing />} />
+            <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
+            <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
+            <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
+            <Route path="/app" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="meetings" element={<Meetings />} />
+              <Route path="meetings/:id" element={<BriefViewer />} />
+              <Route path="clients" element={<ClientMemory />} />
+              <Route path="integrations" element={<Integrations />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="admin" element={<ProtectedRoute adminOnly><Admin /></ProtectedRoute>} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </div>
+  );
+}
+
+export default App;
