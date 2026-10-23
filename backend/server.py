@@ -693,11 +693,8 @@ async def subscribe(payload: SubscribeInput, user=Depends(authmod.get_current_us
         return {"ok": True, "mode": "free", "plan_id": payload.plan_id}
 
     if not billing.is_configured():
-        # Clearly-labeled TEST MODE: no real charge. Activates plan for demonstration.
-        await _activate_plan(user["id"], payload.plan_id, provider="test_mode")
-        return {"ok": True, "mode": "test_mode",
-                "message": "Payments are not configured yet. Plan activated in TEST MODE (no real charge).",
-                "plan_id": payload.plan_id}
+        logger.error("Paid checkout attempted but Razorpay keys are not configured")
+        raise HTTPException(status_code=503, detail="Payments are temporarily unavailable. Please try again later.")
 
     amount_inr = billing.usd_to_inr(plan["price_monthly"])
     try:

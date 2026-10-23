@@ -11,7 +11,7 @@ function loadScript() {
   });
 }
 
-// Resolves with {status: "paid"|"free"|"test_mode"|"dismissed"}; rejects on failure.
+// Resolves with {status: "paid"|"free"|"dismissed"}; rejects on failure.
 export async function startCheckout(planId) {
   const { data } = await api.post("/billing/subscribe", { plan_id: planId });
   if (data.mode !== "razorpay") return { status: data.mode };
@@ -25,7 +25,7 @@ export async function startCheckout(planId) {
       name: "PreMeet",
       description: `${planId} plan — 30 days`,
       prefill: { name: data.user_name, email: data.user_email },
-      theme: { color: "#0284c7" },
+      theme: { color: "#0B0F1A" },
       handler: async (res) => {
         try {
           await api.post("/billing/verify", { plan_id: planId, ...res });

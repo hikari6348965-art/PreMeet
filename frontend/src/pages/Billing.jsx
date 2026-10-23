@@ -72,7 +72,6 @@ export default function Billing() {
       const res = await startCheckout(plan.id);
       if (res.status === "paid") toast.success(`You're on ${plan.name}. Enjoy!`);
       else if (res.status === "free") toast.success(`Switched to ${plan.name}`);
-      else if (res.status === "test_mode") toast.info("Plan activated in test mode (no charge).");
       await load();
     } catch (e) { toast.error(e.message || formatApiErrorDetail(e.response?.data?.detail)); }
     finally { setBusy(""); }
