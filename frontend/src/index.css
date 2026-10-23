@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -9,6 +9,9 @@
 @theme inline {
   --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', monospace;
+  --font-display: 'Space Grotesk', 'Plus Jakarta Sans', sans-serif;
+  --color-ink: #0B0F1A;
+  --color-signal: #C6F432;
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -71,31 +74,31 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
-    --foreground: 222 47% 11%;
+    --background: 48 20% 97%;
+    --foreground: 224 45% 7%;
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 224 45% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 200 98% 39%;
+    --popover-foreground: 224 45% 7%;
+    --primary: 243 80% 58%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222 47% 11%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --accent: 199 95% 94%;
-    --accent-foreground: 200 98% 30%;
-    --destructive: 346 77% 50%;
+    --secondary: 40 12% 93%;
+    --secondary-foreground: 224 45% 7%;
+    --muted: 40 12% 93%;
+    --muted-foreground: 222 12% 40%;
+    --accent: 243 90% 96%;
+    --accent-foreground: 243 70% 45%;
+    --destructive: 0 78% 52%;
     --destructive-foreground: 0 0% 100%;
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 200 98% 39%;
-    --chart-1: 200 98% 39%;
+    --border: 40 8% 86%;
+    --input: 40 8% 86%;
+    --ring: 243 80% 58%;
+    --chart-1: 243 80% 58%;
     --chart-2: 160 84% 39%;
     --chart-3: 32 95% 44%;
-    --chart-4: 243 75% 59%;
+    --chart-4: 199 89% 48%;
     --chart-5: 346 77% 50%;
-    --radius: 0.75rem;
+    --radius: 0.625rem;
   }
 }
 
@@ -113,11 +116,33 @@
   [data-debug-wrapper="true"] { display: contents !important; }
 }
 
-::selection { background: hsl(200 98% 39% / 0.15); color: hsl(222 47% 11%); }
+::selection { background: #C6F432; color: #0B0F1A; }
+
+@layer base {
+  h1, h2, h3, .font-display { font-family: var(--font-display); letter-spacing: -0.02em; }
+}
+
+@keyframes bc-rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes bc-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+@keyframes bc-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
+@keyframes bc-type { from { width: 0; } to { width: 100%; } }
+.bc-rise { animation: bc-rise 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.bc-d1 { animation-delay: 80ms; } .bc-d2 { animation-delay: 160ms; } .bc-d3 { animation-delay: 240ms; }
+.bc-d4 { animation-delay: 320ms; } .bc-d5 { animation-delay: 400ms; } .bc-d6 { animation-delay: 480ms; }
+.bc-marquee { animation: bc-marquee 28s linear infinite; }
+.bc-blink { animation: bc-blink 1.2s ease-in-out infinite; }
+.bc-type { overflow: hidden; white-space: nowrap; animation: bc-type 1.4s steps(40, end) both; }
+.bc-grain::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0.08; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.bc-lift { transition: transform 160ms ease-out, box-shadow 160ms ease-out, border-color 160ms ease-out; }
+.bc-lift:hover { transform: translateY(-2px); box-shadow: 6px 6px 0 0 #0B0F1A; border-color: #0B0F1A; }
+@media (prefers-reduced-motion: reduce) { .bc-rise, .bc-marquee, .bc-blink, .bc-type { animation: none; } }
 
 .bc-grid-bg {
   background-image:
-    linear-gradient(to right, hsl(214 32% 91% / 0.5) 1px, transparent 1px),
-    linear-gradient(to bottom, hsl(214 32% 91% / 0.5) 1px, transparent 1px);
+    linear-gradient(to right, hsl(40 8% 80% / 0.45) 1px, transparent 1px),
+    linear-gradient(to bottom, hsl(40 8% 80% / 0.45) 1px, transparent 1px);
   background-size: 48px 48px;
 }

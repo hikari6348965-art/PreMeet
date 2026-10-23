@@ -161,12 +161,12 @@ export default function Onboarding() {
             </button>
             {step < 3 ? (
               <button onClick={() => setStep(step + 1)} data-testid="onboarding-next-button"
-                className="h-11 px-6 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-[hsl(200_98%_32%)] transition-all active:scale-[0.98]">
+                className="h-11 px-6 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98]">
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             ) : (
               <button onClick={finish} disabled={loading} data-testid="onboarding-finish-button"
-                className="h-11 px-6 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-[hsl(200_98%_32%)] transition-all active:scale-[0.98] disabled:opacity-60">
+                className="h-11 px-6 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98] disabled:opacity-60">
                 {loading && <Loader2 className="h-4 w-4 animate-spin" />} Enter BriefCraft <ArrowRight className="h-4 w-4" />
               </button>
             )}

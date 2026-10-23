@@ -1,86 +1,107 @@
 import { useEffect, useState } from "react";
-import { api } from "../lib/api";
-import { Card, StatusBadge, PageHeader } from "../components/ui-helpers";
+import { useSearchParams } from "react-router-dom";
+import { api, formatApiErrorDetail } from "../lib/api";
+import { Card, StatusBadge, PageHeader, formatDateTime } from "../components/ui-helpers";
 import { toast } from "sonner";
-import { Loader2, CalendarClock, Database, StickyNote, Mail, Plug, Info } from "lucide-react";
+import { Loader2, CalendarClock, Database, StickyNote, Mail, Plug, RefreshCw } from "lucide-react";
 
 const icons = { calendar: CalendarClock, crm: Database, notes: StickyNote, email: Mail };
+const GOOGLE = ["google_calendar", "gmail"];
+const RESULT = {
+  connected: ["success", "Google account connected"], denied: ["error", "Google access was not granted"],
+  expired: ["error", "That connection attempt expired. Please try again."], error: ["error", "Couldn't connect Google. Please try again."],
+};
+
+function IntegrationCard({ r, busy, onConnect, onDisconnect, onSync }) {
+  const live = !r.requires_oauth || GOOGLE.includes(r.provider);
+  const status = r.status === "connected" ? "connected" : live ? "not_connected" : "setup_required";
+  const btn = "h-9 px-4 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors disabled:opacity-60";
+  return (
+    <Card className="p-5 bc-lift" data-testid={`integration-${r.provider}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-display font-bold">{r.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {r.account ? r.account : live ? (r.requires_oauth ? "Google sign-in · read-only" : "Available now") : "Coming soon"}
+          </p>
+          {r.last_synced_at && <p className="text-xs text-muted-foreground mt-0.5" data-testid={`last-synced-${r.provider}`}>Synced {formatDateTime(r.last_synced_at)}</p>}
+          {r.error && <p className="text-xs text-destructive mt-1">{r.error}</p>}
+        </div>
+        <StatusBadge status={status} />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        {r.status === "connected" ? (
+          <>
+            {r.provider === "google_calendar" && (
+              <button onClick={onSync} disabled={busy} data-testid="sync-google-calendar" className={`${btn} bg-ink text-white hover:bg-ink/85`}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />} Import meetings
+              </button>
+            )}
+            <button onClick={onDisconnect} disabled={busy} data-testid={`disconnect-${r.provider}`} className={`${btn} border border-border hover:border-destructive/50`}>
+              Disconnect
+            </button>
+          </>
+        ) : live ? (
+          <button onClick={onConnect} disabled={busy} data-testid={`connect-${r.provider}`} className={`${btn} bg-primary text-primary-foreground hover:bg-primary/90`}>
+            {busy && <Loader2 className="h-4 w-4 animate-spin" />} Connect
+          </button>
+        ) : (
+          <span className="text-xs text-muted-foreground">Needs a developer app from this provider. Ask us to switch it on.</span>
+        )}
+      </div>
+    </Card>
+  );
+}
 
 export default function Integrations() {
   const [rows, setRows] = useState(null);
   const [busy, setBusy] = useState("");
+  const [params, setParams] = useSearchParams();
 
   const load = () => api.get("/integrations").then(({ data }) => setRows(data));
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load().catch(() => toast.error("Couldn't load integrations")); }, []);
+  useEffect(() => {
+    const g = params.get("google");
+    if (g && RESULT[g]) { toast[RESULT[g][0]](RESULT[g][1]); setParams({}, { replace: true }); }
+  }, [params, setParams]);
 
-  const connect = async (provider) => {
+  const run = async (provider, fn) => {
     setBusy(provider);
-    try {
-      const { data } = await api.post(`/integrations/${provider}/connect`);
-      if (data.status === "setup_required") {
-        toast.info(data.message, { duration: 6000 });
-      } else {
-        toast.success("Connected");
-      }
-      await load();
-    } catch { toast.error("Failed to update integration"); }
+    try { await fn(); } catch (e) { toast.error(formatApiErrorDetail(e.response?.data?.detail)); }
     finally { setBusy(""); }
   };
-
-  const disconnect = async (provider) => {
-    setBusy(provider);
-    try { await api.post(`/integrations/${provider}/disconnect`); await load(); toast.success("Disconnected"); }
-    catch { toast.error("Failed"); }
-    finally { setBusy(""); }
-  };
+  const connect = (p) => run(p, async () => {
+    const { data } = await api.post(`/integrations/${p}/connect`);
+    if (data.authorization_url) { window.location.assign(data.authorization_url); return; }
+    toast.success("Connected"); await load();
+  });
+  const disconnect = (p) => run(p, async () => {
+    await api.post(`/integrations/${p}/disconnect`); await load();
+    toast.success(GOOGLE.includes(p) ? "Google disconnected (Calendar and Gmail)" : "Disconnected");
+  });
+  const sync = () => run("google_calendar", async () => {
+    const { data } = await api.post("/integrations/google/sync");
+    toast.success(`Imported ${data.created} new and updated ${data.updated} meetings`); await load();
+  });
 
   if (!rows) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   const grouped = rows.reduce((acc, r) => { (acc[r.category] = acc[r.category] || []).push(r); return acc; }, {});
-  const order = ["calendar", "crm", "notes", "email"];
   const labels = { calendar: "Calendar", crm: "CRM", notes: "Notes & documents", email: "Email" };
 
   return (
     <div data-testid="integrations-page">
-      <PageHeader title="Integrations" subtitle="Connect your tools through official, read-only authorization." />
-
-      <Card className="p-4 mb-6 flex items-start gap-3 bg-accent/30 border-primary/20">
-        <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-        <p className="text-sm text-muted-foreground">
-          Calendar, CRM and email connections use the official OAuth flow and are shown as <strong>Setup required</strong> until OAuth credentials are configured for this workspace. We never fabricate connection status or import data that wasn't really retrieved. Manual notes &amp; uploads are available now.
-        </p>
-      </Card>
-
+      <PageHeader title="Integrations" subtitle="Connect your tools with read-only access. One Google sign-in covers Calendar and Gmail." />
       <div className="space-y-8">
-        {order.filter((cat) => grouped[cat]).map((cat) => {
+        {["calendar", "email", "notes", "crm"].filter((c) => grouped[c]).map((cat) => {
           const Icon = icons[cat] || Plug;
           return (
             <div key={cat}>
-              <h2 className="flex items-center gap-2 font-semibold mb-3"><Icon className="h-4 w-4 text-primary" /> {labels[cat]}</h2>
+              <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground mb-3"><Icon className="h-4 w-4 text-primary" /> {labels[cat]}</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 {grouped[cat].map((r) => (
-                  <Card key={r.id} className="p-5" data-testid={`integration-${r.provider}`}>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-semibold">{r.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{r.requires_oauth ? "OAuth · read-only" : "Available now"}</p>
-                      </div>
-                      <StatusBadge status={r.requires_oauth && r.status === "not_connected" ? "setup_required" : r.status} />
-                    </div>
-                    <div className="mt-4">
-                      {r.status === "connected" ? (
-                        <button onClick={() => disconnect(r.provider)} disabled={busy === r.provider} data-testid={`disconnect-${r.provider}`}
-                          className="h-9 px-4 rounded-lg border border-border text-sm font-medium flex items-center gap-2 hover:border-destructive/40 transition disabled:opacity-60">
-                          {busy === r.provider && <Loader2 className="h-4 w-4 animate-spin" />} Disconnect
-                        </button>
-                      ) : (
-                        <button onClick={() => connect(r.provider)} disabled={busy === r.provider} data-testid={`connect-${r.provider}`}
-                          className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-2 hover:bg-[hsl(200_98%_32%)] transition disabled:opacity-60">
-                          {busy === r.provider && <Loader2 className="h-4 w-4 animate-spin" />} Connect
-                        </button>
-                      )}
-                    </div>
-                  </Card>
+                  <IntegrationCard key={r.id} r={r} busy={busy === r.provider}
+                    onConnect={() => connect(r.provider)} onDisconnect={() => disconnect(r.provider)} onSync={sync} />
                 ))}
               </div>
             </div>

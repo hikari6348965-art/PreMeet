@@ -5,10 +5,11 @@ import { Card, StatusBadge, formatDateTime, meetingTypeLabel } from "../componen
 import BriefContent from "../components/BriefContent";
 import { UpgradeDialog } from "../components/UpgradeDialog";
 import { EmailChip } from "../components/EmailChip";
+import { MeetingNotes } from "../components/MeetingNotes";
 import { toast } from "sonner";
 import {
   ArrowLeft, Sparkles, Loader2, Printer, Copy, Users, Building2, FileText,
-  AlertTriangle, RefreshCw, Trash2, StickyNote,
+  AlertTriangle, RefreshCw, Trash2, StickyNote, Video, ArrowRight,
 } from "lucide-react";
 
 export default function BriefViewer() {
@@ -96,7 +97,7 @@ export default function BriefViewer() {
                   </p>
                 )}
                 <button onClick={generate} disabled={generating} data-testid="generate-brief-button"
-                  className="mt-6 h-11 px-6 rounded-lg bg-primary text-primary-foreground font-semibold text-sm inline-flex items-center gap-2 hover:bg-[hsl(200_98%_32%)] transition active:scale-[0.98] disabled:opacity-60">
+                  className="mt-6 h-11 px-6 rounded-lg bg-primary text-primary-foreground font-semibold text-sm inline-flex items-center gap-2 hover:bg-primary/90 transition active:scale-[0.98] disabled:opacity-60">
                   {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   {generating ? "Preparing brief…" : "Generate brief"}
                 </button>
@@ -126,6 +127,18 @@ export default function BriefViewer() {
 
         {/* Sidebar: context */}
         <div className="lg:col-span-4 space-y-5 print:hidden">
+          <Link to={`/app/meetings/${id}/room`} data-testid="open-video-room-btn"
+            className="group flex items-center justify-between gap-3 p-4 rounded-xl bg-ink text-white relative overflow-hidden bc-grain hover:-translate-y-0.5 transition-transform">
+            <span className="flex items-center gap-3">
+              <span className="h-10 w-10 rounded-lg bg-signal text-ink flex items-center justify-center"><Video className="h-5 w-5" /></span>
+              <span><span className="block font-display font-bold">Join video call</span>
+                <span className="block text-xs text-white/60">Recorded calls get notes automatically</span></span>
+            </span>
+            <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+          </Link>
+          <Card className="p-5" data-testid="brief-meeting-notes-card">
+            <MeetingNotes meetingId={id} canProcess={!!meeting.video_room?.recording} />
+          </Card>
           {contact && contact.name && (
             <Card className="p-5" data-testid="brief-contact-card">
               <h3 className="font-semibold mb-3 flex items-center gap-2"><Users className="h-4 w-4 text-primary" /> Client</h3>

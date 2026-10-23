@@ -17,6 +17,8 @@ import Integrations from "./pages/Integrations";
 import Settings from "./pages/Settings";
 import Admin from "./pages/Admin";
 import Billing from "./pages/Billing";
+import MeetingRoom from "./pages/MeetingRoom";
+import GuestJoin from "./pages/GuestJoin";
 
 function App() {
   useEffect(() => { document.title = "BriefCraft AI — Walk into every meeting prepared"; }, []);
@@ -27,6 +29,7 @@ function App() {
           <Toaster position="top-right" richColors />
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/join/:meetingId" element={<GuestJoin />} />
             <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
             <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />
@@ -34,6 +37,7 @@ function App() {
               <Route index element={<Dashboard />} />
               <Route path="meetings" element={<Meetings />} />
               <Route path="meetings/:id" element={<BriefViewer />} />
+              <Route path="meetings/:id/room" element={<MeetingRoom />} />
               <Route path="clients" element={<ClientMemory />} />
               <Route path="integrations" element={<Integrations />} />
               <Route path="settings" element={<Settings />} />

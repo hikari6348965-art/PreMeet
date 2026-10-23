@@ -23,7 +23,7 @@ export function PlanCard({ plan, current, busy, onSelect, ctaLabel }) {
       </ul>
       {onSelect && (
         <button onClick={() => onSelect(plan)} disabled={busy || current} data-testid={`plan-select-${plan.id}`}
-          className={`mt-6 h-11 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-[background-color,transform] active:scale-[0.98] disabled:opacity-60 ${featured ? "bg-primary text-white hover:bg-[hsl(200_98%_32%)]" : "border border-border hover:border-primary/40"}`}>
+          className={`mt-6 h-11 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-[background-color,transform] active:scale-[0.98] disabled:opacity-60 ${featured ? "bg-primary text-white hover:bg-primary/90" : "border border-border hover:border-primary/40"}`}>
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {current ? "Current plan" : ctaLabel(plan)}
         </button>

@@ -84,7 +84,7 @@ export default function Login() {
             {error && <p className="text-sm text-destructive" data-testid="login-error">{error}</p>}
             <button
               type="submit" disabled={loading} data-testid="login-submit-button"
-              className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[hsl(200_98%_32%)] transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
+              className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition-all duration-200 active:scale-[0.98] disabled:opacity-60"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />} Sign in
             </button>

@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard, CalendarClock, Users, Plug, Settings as SettingsIcon,
@@ -18,17 +18,18 @@ const nav = [
 export default function DashboardLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
 
   const handleLogout = async () => { await logout(); navigate("/login"); };
 
   const navContent = (
     <>
-      <div className="flex items-center gap-2 px-5 py-5 border-b border-border">
-        <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-          <FileText className="h-4 w-4 text-primary-foreground" />
+      <div className="flex items-center gap-2 px-5 py-5 border-b border-white/10">
+        <div className="h-8 w-8 rounded-lg bg-signal flex items-center justify-center">
+          <FileText className="h-4 w-4 text-ink" />
         </div>
-        <span className="font-bold text-lg tracking-tight">BriefCraft</span>
+        <span className="font-display font-bold text-lg tracking-tight text-white">BriefCraft</span>
       </div>
       <nav className="flex-1 px-3 py-4 space-y-1">
         {nav.map((item) => (
@@ -40,7 +41,7 @@ export default function DashboardLayout() {
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                isActive ? "bg-white text-ink shadow-[3px_3px_0_0_#C6F432]" : "text-white/60 hover:bg-white/10 hover:text-white"
               }`
             }
           >
@@ -55,7 +56,7 @@ export default function DashboardLayout() {
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                isActive ? "bg-white text-ink shadow-[3px_3px_0_0_#C6F432]" : "text-white/60 hover:bg-white/10 hover:text-white"
               }`
             }
           >
@@ -64,20 +65,20 @@ export default function DashboardLayout() {
           </NavLink>
         )}
       </nav>
-      <div className="px-3 py-4 border-t border-border">
+      <div className="px-3 py-4 border-t border-white/10">
         <div className="flex items-center gap-3 px-2 py-2">
-          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+          <div className="h-9 w-9 rounded-full bg-signal flex items-center justify-center text-ink font-bold text-sm">
             {(user?.name || "U").charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate" data-testid="sidebar-user-name">{user?.name}</p>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+            <p className="text-sm font-medium truncate text-white" data-testid="sidebar-user-name">{user?.name}</p>
+            <p className="text-xs text-white/50 truncate">{user?.email}</p>
           </div>
         </div>
         <button
           onClick={handleLogout}
           data-testid="logout-button"
-          className="mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-secondary hover:text-foreground transition-all duration-200"
+          className="mt-2 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:bg-white/10 hover:text-white transition-colors"
         >
           <LogOut className="h-[18px] w-[18px]" /> Sign out
         </button>
@@ -87,14 +88,14 @@ export default function DashboardLayout() {
 
   return (
     <div className="min-h-screen flex bg-background">
-      <aside className="hidden lg:flex w-64 flex-col border-r border-border bg-card fixed inset-y-0 z-30">
+      <aside className="hidden lg:flex w-64 flex-col bg-ink fixed inset-y-0 z-30">
         {navContent}
       </aside>
 
       {open && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
           <div className="fixed inset-0 bg-black/30" onClick={() => setOpen(false)} />
-          <aside className="relative w-64 flex flex-col border-r border-border bg-card">{navContent}</aside>
+          <aside className="relative w-64 flex flex-col bg-ink">{navContent}</aside>
         </div>
       )}
 
@@ -111,7 +112,7 @@ export default function DashboardLayout() {
           </button>
         </header>
         <main className="flex-1 p-5 sm:p-8 max-w-7xl w-full mx-auto">
-          <Outlet />
+          <div key={location.pathname} className="bc-rise"><Outlet /></div>
         </main>
       </div>
     </div>

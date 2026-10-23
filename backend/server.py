@@ -25,6 +25,8 @@ import brief_service
 import billing
 import seed
 import email_service
+import google_service
+import routes_extra
 import asyncio
 
 _bg_tasks = set()
@@ -438,12 +440,30 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
         company = await db.companies.find_one({"id": contact["company_id"], "user_id": uid})
     notes = await db.notes.find({"user_id": uid, "contact_id": meeting.get("contact_id")}).to_list(50) if meeting.get("contact_id") else []
     commitments = await db.commitments.find({"user_id": uid, "contact_id": meeting.get("contact_id")}).to_list(50) if meeting.get("contact_id") else []
-
+    notes = [clean(n) for n in notes]
+    past_calls = await db.meeting_notes.find({"user_id": uid, "status": "ready", "meeting_id": {"$ne": meeting["id"]}},
+                                             {"_id": 0}).to_list(200)
+    if meeting.get("contact_id") and past_calls:
+        related = {m["id"]: m for m in await db.meetings.find(
+            {"user_id": uid, "contact_id": meeting["contact_id"]}, {"_id": 0}).to_list(200)}
+        for pc in past_calls:
+            if pc["meeting_id"] in related and pc.get("ai"):
+                notes.append({"source_type": "call_notes", "title": f"Call: {related[pc['meeting_id']].get('title')}",
+                              "created_at": pc.get("updated_at", ""), "content": pc["ai"].get("summary", "")})
+    emails = list(meeting.get("attendee_emails") or []) + ([contact.get("email")] if contact and contact.get("email") else [])
+    gmail_row = await db.integrations.find_one({"user_id": uid, "provider": "gmail", "status": "connected"})
+    if gmail_row and emails:
+        try:
+            for t in await google_service.gmail_threads(uid, emails):
+                notes.append({"source_type": "gmail", "title": t["subject"], "created_at": t["date"],
+                              "content": f"From {t['from']}: {t['snippet']}"})
+        except Exception as e:
+            logger.warning(f"Gmail context skipped: {e}")
     pref = await db.preferences.find_one({"user_id": uid}) or {}
     template = payload.template or pref.get("default_template", "consultant")
     context = brief_service.build_context(clean(meeting), clean(contact) if contact else None,
                                           clean(company) if company else None,
-                                          [clean(n) for n in notes], [clean(c) for c in commitments])
+                                          notes, [clean(c) for c in commitments])
     try:
         content = await brief_service.generate_brief(
             context, pref.get("tone", "professional"),
@@ -577,6 +597,8 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
     if not row:
         raise HTTPException(status_code=404, detail="Unknown integration")
     # Honest status: OAuth-based providers are NOT configured yet in this MVP.
+    if provider in google_service.GOOGLE_PROVIDERS:
+        return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
     if row.get("requires_oauth"):
         return {"ok": False, "status": "setup_required", "provider": provider,
                 "message": f"{row['name']} uses the official OAuth flow. Connect this integration once OAuth credentials are configured. No fabricated data is shown until a real connection is established."}
@@ -588,6 +610,9 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
 
 @api.post("/integrations/{provider}/disconnect")
 async def disconnect_integration(provider: str, user=Depends(authmod.get_current_user)):
+    if provider in google_service.GOOGLE_PROVIDERS:
+        await google_service.disconnect(user["id"])
+        return {"ok": True}
     await db.integrations.update_one(
         {"user_id": user["id"], "provider": provider},
         {"$set": {"status": "not_connected", "connected_at": None, "error": None}})
@@ -788,6 +813,7 @@ async def health():
 
 
 app.include_router(api)
+app.include_router(routes_extra.router)
 
 app.add_middleware(
     CORSMiddleware,

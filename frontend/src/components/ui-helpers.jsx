@@ -26,7 +26,7 @@ export function PageHeader({ title, subtitle, action }) {
   return (
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-7">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{title}</h1>
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{title}</h1>
         {subtitle && <p className="mt-1.5 text-muted-foreground">{subtitle}</p>}
       </div>
       {action}

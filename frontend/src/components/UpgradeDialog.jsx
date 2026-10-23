@@ -20,7 +20,7 @@ export function UpgradeDialog({ open, onOpenChange, message }) {
           <button onClick={() => onOpenChange(false)} data-testid="upgrade-dialog-later"
             className="h-10 px-4 rounded-lg border border-border text-sm font-medium hover:border-primary/40 transition-colors">Maybe later</button>
           <button onClick={() => navigate("/app/billing")} data-testid="upgrade-dialog-see-plans"
-            className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-[hsl(200_98%_32%)] transition-colors">See plans</button>
+            className="h-10 px-5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors">See plans</button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

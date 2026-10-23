@@ -74,7 +74,7 @@ export default function ClientMemory() {
       <PageHeader title="Client Memory" subtitle="A unified profile per client — notes, commitments and meeting history with their sources."
         action={
           <button onClick={() => setShowAdd(true)} data-testid="add-contact-button"
-            className="h-11 px-5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-[hsl(200_98%_32%)] transition active:scale-[0.98]">
+            className="h-11 px-5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition active:scale-[0.98]">
             <Plus className="h-4 w-4" /> Add contact
           </button>
         } />
@@ -149,7 +149,7 @@ export default function ClientMemory() {
                     <Upload className="h-3.5 w-3.5" /> Import
                     <input type="file" accept=".txt,.md,.csv" className="hidden" onChange={uploadNote} data-testid="import-note-input" />
                   </label>
-                  <button onClick={() => setShowNote(true)} data-testid="add-note-button" className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:bg-[hsl(200_98%_32%)] transition">
+                  <button onClick={() => setShowNote(true)} data-testid="add-note-button" className="h-9 px-3 rounded-lg bg-primary text-primary-foreground text-sm font-medium flex items-center gap-1.5 hover:bg-primary/90 transition">
                     <Plus className="h-3.5 w-3.5" /> Note
                   </button>
                 </div>
@@ -240,7 +240,7 @@ function Inp({ label, value, onChange, required, testid }) {
 function SubmitBtn({ saving, label, testid }) {
   return (
     <button type="submit" disabled={saving} data-testid={testid}
-      className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[hsl(200_98%_32%)] transition active:scale-[0.98] disabled:opacity-60">
+      className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition active:scale-[0.98] disabled:opacity-60">
       {saving && <Loader2 className="h-4 w-4 animate-spin" />} {label}
     </button>
   );

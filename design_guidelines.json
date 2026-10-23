@@ -1,173 +1,118 @@
 {
-  "project_name": "BriefCraft AI - AI Meeting Brief Generator",
-  "app_type": "hybrid_fullstack",
-  "theme": "light",
-  "archetype": "ARCHETYPE 4: SWISS & HIGH-CONTRAST + ARCHETYPE 1: ORGANIC & EARTHY ACCENTS",
-  "emotional_tone": "Authoritative, serene, ultra-prepared, precise, executive-ready",
-  "design_philosophy": {
-    "core_promise": "Walk into every meeting prepared.",
-    "aesthetic_principles": [
-      "Light-mode Executive Pristine: Off-white canvas (#F8F9FA) with warm bone/stone card backgrounds (#FFFFFF) and crisp 1px borders (#E5E7EB)",
-      "Editorial Swiss Typography: High-impact display headlines using 'Cabinet Grotesk' or 'Plus Jakarta Sans', crisp body text, and uppercase JetBrains Mono / IBM Plex Mono for badges & meta-tags",
-      "Executive Brief Focus: Content-first one-page meeting briefs front-loading background, commitments, talking points, and source citations without digital slop or dark gradients",
-      "Micro-Tactile Controls: Pill-shaped badges, subtle hover lifts, status pulses, and glassmorphic floating actions"
-    ]
+  "project_name": "BriefCraft AI",
+  "brand_identity": {
+    "name": "BriefCraft AI",
+    "positioning": "Crisp, confident, high-speed B2B AI Executive Assistant & Meeting Intelligence Studio",
+    "theme_mode": "Crisp High-Contrast (Light baseline with dark focal surfaces & rich warm off-white canvas)",
+    "aesthetic_archetype": "Swiss High-Contrast / Kinetic Precision - Crisp editorial typography, sharp borders (1px solid with 8% opacity or dark ink), vibrant electric indigo/cobalt primary trigger, high-density structured bento grids, tactile physical micro-interactions"
   },
   "typography": {
-    "headings": {
-      "family": "Plus Jakarta Sans, Cabinet Grotesk, sans-serif",
-      "weights": "font-extrabold / font-bold / font-semibold",
-      "letter_spacing": "tracking-tight (-0.025em)",
-      "scale": {
-        "h1": "text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight",
-        "h2": "text-2xl sm:text-3xl lg:text-4xl font-bold leading-snug",
-        "h3": "text-xl sm:text-2xl font-semibold leading-snug",
-        "h4": "text-lg sm:text-xl font-medium"
-      }
-    },
-    "body": {
-      "family": "Plus Jakarta Sans, system-ui, sans-serif",
-      "weights": "font-normal (400) / font-medium (500)",
-      "scale": "text-base (mobile: text-sm), leading-relaxed"
-    },
-    "metadata_and_mono": {
-      "family": "JetBrains Mono, IBM Plex Mono, monospace",
-      "usage": "Used for meeting timestamps, source badges, confidence scores, CRM deal tags, and keyboard shortcuts",
-      "scale": "text-xs font-mono uppercase tracking-wider text-slate-500"
-    },
-    "forbidden_fonts": ["Inter", "Space Grotesk"]
-  },
-  "colors": {
-    "palette": {
-      "background_page": "#F8FAFC",
-      "surface_card": "#FFFFFF",
-      "surface_elevated": "#F1F5F9",
-      "border_default": "#E2E8F0",
-      "border_subtle": "#F1F5F9",
-      "text_primary": "#0F172A",
-      "text_secondary": "#475569",
-      "text_muted": "#64748B",
-      "brand_primary": "#0284C7",
-      "brand_primary_hover": "#0369A1",
-      "brand_secondary": "#0F172A",
-      "accent_emerald": "#059669",
-      "accent_amber": "#D97706",
-      "accent_rose": "#E11D48",
-      "accent_indigo": "#4F46E5",
-      "tag_background_blue": "#EFF6FF",
-      "tag_text_blue": "#1D4ED8",
-      "tag_background_emerald": "#ECFDF5",
-      "tag_text_emerald": "#047857",
-      "tag_background_amber": "#FFFBEB",
-      "tag_text_amber": "#B45309"
-    },
-    "contrast_and_accessibility": {
-      "normal_text_min_ratio": "4.5:1",
-      "large_text_min_ratio": "3:1",
-      "rule": "Always explicitly set dark text on light hover states and light text on primary dark button states."
-    },
-    "forbidden_colors": ["#7351B7", "#1B93A4"]
-  },
-  "layout_and_spacing": {
-    "spacing_scale": "p-2, p-4, p-6, p-8, p-12, p-16, p-24, p-32",
-    "container_padding_rule": "Containers with borders MUST have internal padding (minimum p-5 or p-6) to prevent text clipping.",
-    "dashboard_grid": "MODE B: High Density Grid (grid-cols-1 md:grid-cols-3 lg:grid-cols-12, gap-6)",
-    "marketing_grid": "Swiss Grid with generative white space, overlapping callout banners, feature cards, and asymmetric bento layouts",
-    "brief_viewer_layout": "Single-page executive document layout (2-column layout on desktop: 8-col main briefing + 4-col client/deal sidebar)"
-  },
-  "key_routes_and_components": {
-    "landing_page": {
-      "hero": "Bold headline ('Walk into every meeting with unfair advantage'), interactive live demo toggle, video/interactive brief preview",
-      "features": "Bento grid displaying Auto-Calendar sync, CRM Context Deep-Dive, Action Item Extractor, Custom Brief Templates",
-      "example_brief_interactive": "Interactive One-Page Brief preview with live tab switching (Background, Past Commitments, Talking Points, Questions, Sources)",
-      "integrations": "Interactive badge grid for Google Calendar, Outlook, Salesforce, Hubspot, Notion, Slack, Gmail",
-      "pricing": "Transparent tier cards (Freelancer, Executive, Pro Team) with monthly/yearly switch & usage comparison table",
-      "faq_and_security": "Accordion FAQ + SOC2/GDPR enterprise security guarantees"
-    },
-    "authentication": {
-      "path": "/login & /register",
-      "style": "Clean light glass card split-screen with social OAuth (Google/Microsoft) and email magic link option"
-    },
-    "onboarding": {
-      "steps": "1. Professional Role selection -> 2. Connect Calendars & CRM -> 3. Define Brief Depth & Notification Rules -> 4. Generate First Sample Brief"
-    },
-    "dashboard": {
-      "widgets": [
-        "Upcoming Meetings Schedule (Today & Tomorrow timeline with brief status indicators: Ready, Syncing, Pending)",
-        "Quick Action Hero (Generate Instant Brief, Copy Summary to Clipboard, Send to Slack)",
-        "Recent Briefs Archive (Searchable grid/table with filter tags)",
-        "Unresolved Commitments & Action Items Tracker",
-        "Integration Connection Health status bar",
-        "Monthly Usage Quota bar (e.g. 14 / 30 briefs used)"
-      ]
-    },
-    "brief_viewer": {
-      "sections": [
-        "Header Masthead (Meeting Title, Time, Attendees with CRM Avatars & Roles, Firm Name)",
-        "Executive Summary / Background Context (3 concise bullet points)",
-        "Relationship & Meeting History Highlights",
-        "Unresolved Commitments (Open promises from previous emails/calls)",
-        "Strategic Talking Points (Ordered by priority)",
-        "Suggested Questions & Topics to Avoid",
-        "Citations & Sourced Evidence Footer (Clickable links to notes, calendar events, CRM deals)"
-      ],
-      "interactive_actions": ["Edit Brief inline", "Export PDF / Markdown", "Copy One-Liner Summary", "Share via Link", "Regenerate AI Section"]
-    },
-    "client_memory": {
-      "features": "Searchable Contact & Organization directory with timeline of past briefs, key preferences, deal stages, and email interaction history"
-    },
-    "integrations_page": {
-      "features": "Grid of calendar, email, CRM, and note providers with Connect/Disconnect toggle buttons, sync health logs, and permission toggles"
-    },
-    "settings_and_admin": {
-      "user_settings": "Profile, Brief Custom Template builder, Default AI Prompt instructions, Notification Webhooks, Billing/Subscription portal",
-      "admin_interface": "User management, Global quota controls, System prompt manager, API token usage monitoring chart"
+    "heading_font": "Space Grotesk / Cabinet Grotesk / Plus Jakarta Sans",
+    "body_font": "Plus Jakarta Sans / Inter",
+    "mono_font": "JetBrains Mono",
+    "google_fonts_import": "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
+    "hierarchy": {
+      "h1_hero": "text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-slate-900 leading-[1.08]",
+      "h2_section": "text-2xl sm:text-3xl lg:text-4xl font-semibold tracking-tight text-slate-900",
+      "h3_card": "text-lg sm:text-xl font-semibold tracking-tight text-slate-900",
+      "subtitle": "text-base sm:text-lg text-slate-600 font-normal leading-relaxed",
+      "body": "text-sm sm:text-base text-slate-700 leading-normal",
+      "caption_label": "text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600"
     }
   },
-  "media_and_assets": {
-    "image_urls": [
-      {
-        "category": "hero_workspace",
-        "url": "https://images.unsplash.com/photo-1649119162006-304b172c12d8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NDk1ODB8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBvZmZpY2UlMjBkZXNrJTIwbGFwdG9wJTIwbWluaW1hbGlzdCUyMHdvcmtzcGFjZXxlbnwwfHx8fDE3OTI3NjEyOTh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Minimalist desk workspace with laptop for hero showcase"
-      },
-      {
-        "category": "meeting_executive",
-        "url": "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2MjJ8MHwxfHNlYXJjaHwxfHxwcm9mZXNzaW9uYWwlMjBidXNpbmVzcyUyMG1lZXRpbmclMjBleGVjdXRpdmUlMjBjb25zdWx0YW50JTIwcHJlc2VudGF0aW9ufGVufDB8fHx8MTc5Mjc2MTI5MXww&ixlib=rb-4.1.0&q=85",
-        "description": "Professional team executive meeting presentation"
-      },
-      {
-        "category": "avatar_consultant_1",
-        "url": "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwyfHxjb3Jwb3JhdGUlMjBjb25zdWx0YW50JTIwZXhlY3V0aXZlJTIwaGVhZHNob3QlMjBwb3J0cmFpdHxlbnwwfHx8fDE3OTI3NjEyOTh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Executive woman consultant headshot"
-      },
-      {
-        "category": "avatar_consultant_2",
-        "url": "https://images.unsplash.com/photo-1560250097-0b93528c311a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHwxfHxjb3Jwb3JhdGUlMjBjb25zdWx0YW50JTIwZXhlY3V0aXZlJTIwaGVhZHNob3QlMjBwb3J0cmFpdHxlbnwwfHx8fDE3OTI3NjEyOTh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Executive man account director headshot"
-      },
-      {
-        "category": "avatar_consultant_3",
-        "url": "https://images.unsplash.com/photo-1585240975858-7264fd020798?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzd8MHwxfHNlYXJjaHw0fHxjb3Jwb3JhdGUlMjBjb25zdWx0YW50JTIwZXhlY3V0aXZlJTIwaGVhZHNob3QlMjBwb3J0cmFpdHxlbnwwfHx8fDE3OTI3NjEyOTh8MA&ixlib=rb-4.1.0&q=85",
-        "description": "Senior partner executive headshot"
-      }
-    ],
-    "icons": "lucide-react icons for UI elements and status indicators"
+  "colors": {
+    "css_variables_hsl": {
+      "--background": "0 0% 98%",
+      "--foreground": "224 71.4% 4.1%",
+      "--card": "0 0% 100%",
+      "--card-foreground": "224 71.4% 4.1%",
+      "--popover": "0 0% 100%",
+      "--popover-foreground": "224 71.4% 4.1%",
+      "--primary": "238 84% 59%",
+      "--primary-foreground": "0 0% 100%",
+      "--secondary": "220 14.3% 95.9%",
+      "--secondary-foreground": "220.9 39.3% 11%",
+      "--muted": "220 14.3% 95.9%",
+      "--muted-foreground": "220 8.9% 46.1%",
+      "--accent": "238 84% 96%",
+      "--accent-foreground": "238 84% 45%",
+      "--destructive": "0 84.2% 60.2%",
+      "--destructive-foreground": "210 20% 98%",
+      "--border": "220 13% 91%",
+      "--input": "220 13% 91%",
+      "--ring": "238 84% 59%",
+      "--radius": "0.625rem"
+    },
+    "hex_palette": {
+      "canvas_bg": "#FAFAFA",
+      "card_surface": "#FFFFFF",
+      "dark_surface": "#0F172A",
+      "ink_primary": "#020617",
+      "ink_secondary": "#475569",
+      "primary_indigo": "#4F46E5",
+      "primary_hover": "#4338CA",
+      "accent_cyan": "#0EA5E9",
+      "success_emerald": "#059669",
+      "warning_amber": "#D97706",
+      "border_subtle": "#E2E8F0"
+    }
+  },
+  "spacing_and_layout": {
+    "grid_modes": {
+      "marketing_landing": "MODE A: TETRIS GRID (Asymmetrical 12-col grid, gap-6 lg:gap-8, generous py-20 lg:py-28)",
+      "app_dashboard": "MODE B: HIGH DENSITY GRID (3-col or 4-col responsive grid, gap-5, strict alignment with direct flex/grid children)",
+      "video_and_notes": "SPLIT WORKSPACE GRID (Left 65% Daily.co video room + transcript / Right 35% live AI notes, decisions, action items & manual notes editor)"
+    },
+    "container_padding": "px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto",
+    "card_padding": "p-5 sm:p-6 lg:p-8"
+  },
+  "visual_enhancers": {
+    "glassmorphism": "backdrop-blur-xl bg-white/80 border border-slate-200/80 shadow-sm",
+    "dark_glassmorphism": "backdrop-blur-xl bg-slate-900/90 border border-slate-800 shadow-xl text-white",
+    "card_elevated": "bg-white border border-slate-200/90 shadow-[0_4px_20px_-4px_rgba(15,23,42,0.05)] hover:shadow-[0_12px_32px_-6px_rgba(15,23,42,0.12)] hover:border-slate-300 transition-all duration-200",
+    "badge_pill": "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide border",
+    "grid_pattern_bg": "bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"
   },
   "motion_and_interaction": {
-    "hover_states": "subtle lift -translate-y-0.5 shadow-md border-sky-300 transition-all duration-200",
-    "click_states": "scale-[0.98] transition-transform duration-100",
-    "motion_library": "framer-motion for smooth list staggered entrance, accordion collapse, and tab sliding highlight",
-    "toast_notifications": "sonner for crisp feedback toasts ('Brief generated successfully', 'Exported to PDF')"
+    "rules": "Snappy micro-interactions, responsive click feedback, staggered card entrance, hover scale (1.02), hover lift (-translate-y-0.5), active scale-95",
+    "button_transitions": "transition-all duration-150 ease-out active:scale-[0.98] hover:shadow-md",
+    "framer_motion_defaults": "initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, ease: 'easeOut' }}"
   },
-  "testing_requirements": {
-    "data_testid_rule": "ALL interactive and key informational elements MUST include a data-testid attribute in kebab-case (e.g. data-testid='generate-brief-button', data-testid='meeting-card-1', data-testid='brief-talking-points-list')."
+  "key_components_and_layouts": {
+    "landing_page": {
+      "header": "Sticky navbar with glassmorphism (bg-white/80 backdrop-blur-md), logo badge, menu links, Sign In & Start Free Trial CTAs.",
+      "hero": "Bold H1 display headline, high-contrast badge 'AI Meeting Brief Studio 2.0', interactive live preview toggle (Before vs After Brief), 2 CTAs + trusted by logo strip.",
+      "how_it_works": "3-step visual cards with step numbers, micro-illustrations, calendar sync -> auto-enrichment -> 1-page executive brief.",
+      "example_brief_interactive": "Full interactive brief card with tabs (Overview, Key Contacts, CRM History, Open Deals, Strategic Prep, Risk Signals) & source attribution chips.",
+      "video_room_feature_highlight": "Showcase built-in Daily.co call room with real-time audio transcription and automated note extraction.",
+      "pricing": "3-tier Razorpay pricing cards (Starter Trial $0, Entry $19/mo, Professional $29/mo) with feature checklist, popular tag, and crisp CTA buttons.",
+      "faq": "Accordion-style structured FAQ with concise answers."
+    },
+    "app_shell_and_navigation": {
+      "sidebar": "Clean left vertical navigation bar with brand logo, quick 'Join Next Meeting' button, NavLinks (Dashboard, Meetings, Video Room, Integrations, Client Memory, Settings, Admin), user profile drawer.",
+      "top_bar": "Search bar, quick notification center, current time/time-zone display, calendar sync status pill."
+    },
+    "video_call_room_and_notes": {
+      "call_layout": "Responsive split screen. Left side: Daily.co embed container with full call controls (Mic, Camera, Screen Share, Live Record Indicator 'REC', Transcript Feed). Right side: AI Notes Panel with tabs (Executive Brief, Auto-Extracted Notes [Decisions, Action Items, Key Highlights], Manual Notes Editor with Markdown formatting, Export PDF button).",
+      "export_pdf_button": "Crisp icon button with PDF download trigger and feedback toast."
+    }
+  },
+  "image_urls": {
+    "meeting_video_1": "https://images.unsplash.com/photo-1758873269461-49cfd01504c1?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHw0fHxidXNpbmVzcyUyMG1lZXRpbmclMjB2aWRlbyUyMGNhbGwlMjBwcm9mZXNzaW9uYWwlMjB0ZWFtfGVufDB8fHx8MTc5Mjc2NTE2N3ww&ixlib=rb-4.1.0&q=85",
+    "meeting_video_2": "https://images.pexels.com/photos/1181745/pexels-photo-1181745.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "executive_portrait": "https://images.unsplash.com/photo-1790596685053-4463ee548500?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzF8MHwxfHNlYXJjaHszfHxidXNpbmVzcyUyMG1lZXRpbmclMjB2aWRlbyUyMGNhbGwlMjBwcm9mZXNzaW9uYWwlMjB0ZWFtfGVufDB8fHx8MTc5Mjc2NTE2N3ww&ixlib=rb-4.1.0&q=85"
+  },
+  "testing_and_accessibility": {
+    "data_testid_rule": "MUST include data-testid attribute on all interactive elements, CTAs, navigation links, inputs, tabs, export buttons, and key data panels using kebab-case role naming (e.g. data-testid='landing-get-started-btn', data-testid='video-room-mic-toggle', data-testid='notes-export-pdf-btn', data-testid='brief-tab-action-items')",
+    "contrast_standards": "All text elements must maintain >= 4.5:1 contrast ratio against their immediate background color. Never use pure transparent backgrounds under text overlay."
   },
   "instructions_to_main_agent": [
-    "Build out the full React JS application with React Router DOM supporting all mentioned routes: Landing, Auth, Onboarding, Dashboard, Brief Viewer, Client Memory, Integrations, Settings, Admin.",
-    "Implement rich mock data for meetings (with realistic companies, CRM history, talking points, unresolved commitments, source links) so the app feels like a live production tool.",
-    "Provide full interactive capabilities: creating new briefs manually or via quick trigger, editing brief items inline, toggling integrations, searching client memory, updating settings.",
-    "Ensure every page header and navigation bar is styled with semi-opaque glassmorphism or clean solid border backdrop, maintaining flawless light mode legibility.",
-    "Attach data-testid attributes to all buttons, inputs, tabs, cards, and modal triggers to satisfy automated test requirements."
+    "Ensure Javascript React (.js) component compatibility across all views.",
+    "Inject Google Fonts (Space Grotesk & Plus Jakarta Sans) into public/index.html or src/index.css.",
+    "Update src/index.css with the high-contrast CSS variable color palette provided.",
+    "Use Lucide React icons with explicit sizing (w-4 h-4, w-5 h-5) and strong color contrast.",
+    "Ensure all interactive components and buttons include data-testid attributes.",
+    "Utilize Sonner toasts for copy-to-clipboard, notes saving, PDF export, and setting toggles.",
+    "In the Video Call Room view, ensure seamless integration between the Daily.co video frame and the right-hand post-meeting AI notes/manual notes editor."
   ]
 }

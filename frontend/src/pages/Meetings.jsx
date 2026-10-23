@@ -46,7 +46,7 @@ export default function Meetings() {
         subtitle="Your upcoming and past meetings. Generate a brief for any of them."
         action={
           <button onClick={() => setShowModal(true)} data-testid="add-meeting-button"
-            className="h-11 px-5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-[hsl(200_98%_32%)] transition-all active:scale-[0.98]">
+            className="h-11 px-5 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98]">
             <Plus className="h-4 w-4" /> Add meeting
           </button>
         }
@@ -122,7 +122,7 @@ export default function Meetings() {
                 <input value={form.objective} onChange={(e) => setForm({ ...form, objective: e.target.value })} data-testid="meeting-objective-input" className="input" placeholder="What do you want to achieve?" />
               </Field>
               <button type="submit" disabled={saving} data-testid="save-meeting-button"
-                className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-[hsl(200_98%_32%)] transition active:scale-[0.98] disabled:opacity-60">
+                className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary/90 transition active:scale-[0.98] disabled:opacity-60">
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />} Save meeting
               </button>
             </form>
