@@ -1,5 +1,4 @@
 export const PRIVACY_LAST_UPDATED = "October 23, 2026";
-export const PRIVACY_CONTACT_EMAIL = "azuredark647@gmail.com";
 
 // Each block: string = paragraph, { list: [...] } = bullet list, { h: "..." } = sub-heading
 export const PRIVACY_SECTIONS = [

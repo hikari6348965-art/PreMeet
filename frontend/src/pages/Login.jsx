@@ -95,6 +95,8 @@ export default function Login() {
             </Link>
           </p>
           <p className="text-xs text-muted-foreground mt-4 text-center">
+            <Link to="/terms" className="underline hover:text-foreground" data-testid="login-terms-link">Terms of Service</Link>
+            <span className="mx-2">·</span>
             <Link to="/privacy" className="underline hover:text-foreground" data-testid="login-privacy-link">Privacy Policy</Link>
           </p>
         </div>

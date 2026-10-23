@@ -21,6 +21,7 @@ import MeetingRoom from "./pages/MeetingRoom";
 import GuestJoin from "./pages/GuestJoin";
 import AuthCallback from "./pages/AuthCallback";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 
 function AppRoutes() {
   const location = useLocation();
@@ -30,6 +31,7 @@ function AppRoutes() {
             <Route path="/" element={<Landing />} />
             <Route path="/join/:meetingId" element={<GuestJoin />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/login" element={<PublicOnly><Login /></PublicOnly>} />
             <Route path="/register" element={<PublicOnly><Register /></PublicOnly>} />
             <Route path="/onboarding" element={<ProtectedRoute><Onboarding /></ProtectedRoute>} />

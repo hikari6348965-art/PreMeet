@@ -106,6 +106,7 @@ export default function Register() {
           </p>
           <p className="text-xs text-muted-foreground mt-4 text-center" data-testid="register-privacy-note">
             By creating an account you agree to our{" "}
+            <Link to="/terms" className="underline hover:text-foreground" data-testid="register-terms-link">Terms of Service</Link> and{" "}
             <Link to="/privacy" className="underline hover:text-foreground" data-testid="register-privacy-link">Privacy Policy</Link>.
           </p>
         </div>

@@ -316,6 +316,7 @@ export default function Landing() {
           <Logo tone="ink" className="h-6" testid="footer-logo" />
           <div className="flex items-center gap-5">
             <Link to="/privacy" data-testid="footer-privacy-link" className="hover:text-foreground transition-colors">Privacy Policy</Link>
+            <Link to="/terms" data-testid="footer-terms-link" className="hover:text-foreground transition-colors">Terms of Service</Link>
             <p>© {new Date().getFullYear()} PreMeet</p>
           </div>
         </div>
