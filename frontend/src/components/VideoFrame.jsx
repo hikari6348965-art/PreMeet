@@ -3,7 +3,7 @@ import DailyIframe from "@daily-co/daily-js";
 import { Loader2, Video } from "lucide-react";
 
 const FRIENDLY = {
-  "account-missing-payment-method": "Video calls are paused: the video provider account needs a payment method before calls can start.",
+  "account-missing-payment-method": "Video calls are paused. The PreMeet owner needs to add a payment method in the Daily.co dashboard (Billing) before calls can start.",
   "exp-room": "This room has expired. Start the call again to get a fresh room.",
   "exp-token": "Your call link expired. Reload the page to rejoin.",
 };
@@ -25,16 +25,19 @@ export function VideoFrame({ url, token, onLeft, onJoined }) {
     });
     let active = true;
     let failed = false;
-    const fail = (msg) => {
+    const fail = (msg, raw) => {
       if (!active) return;
-      failed = true;
+      console.error("Daily call error:", msg, raw);
       const key = Object.keys(FRIENDLY).find((k) => (msg || "").includes(k));
+      // Keep the first specific reason; Daily fires a generic join rejection right after
+      if (failed && !key) return;
+      failed = true;
       setError(key ? FRIENDLY[key] : "Couldn't connect to the call. Please try again.");
     };
     frame.on("joined-meeting", () => { if (!active) return; setJoining(false); handlers.current.onJoined?.(); });
     frame.on("left-meeting", () => { if (active && !failed) handlers.current.onLeft?.(); });
-    frame.on("error", (e) => fail(e?.errorMsg || e?.error?.type));
-    frame.join({ url, token }).then(() => { if (active) setJoining(false); }).catch((e) => fail(e?.message));
+    frame.on("error", (e) => fail(e?.errorMsg || e?.error?.type, JSON.stringify(e)));
+    frame.join({ url, token }).then(() => { if (active) setJoining(false); }).catch((e) => fail(e?.message, String(e)));
     return () => { active = false; frame.destroy(); };
   }, [url, token]);
 
