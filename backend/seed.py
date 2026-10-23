@@ -30,9 +30,6 @@ DEFAULT_PLANS = [
 
 INTEGRATION_CATALOG = [
     {"provider": "google_calendar", "name": "Google Calendar", "category": "calendar", "requires_oauth": True},
-    {"provider": "outlook_calendar", "name": "Outlook Calendar", "category": "calendar", "requires_oauth": True},
-    {"provider": "hubspot", "name": "HubSpot", "category": "crm", "requires_oauth": True},
-    {"provider": "salesforce", "name": "Salesforce", "category": "crm", "requires_oauth": True},
     {"provider": "manual_notes", "name": "Manual Notes & Uploads", "category": "notes", "requires_oauth": False},
     {"provider": "gmail", "name": "Gmail", "category": "email", "requires_oauth": True},
 ]
@@ -99,6 +96,20 @@ async def ensure_preferences(user_id: str, profession: str = "consultant"):
             "auto_generate": False,
             "updated_at": now_iso(),
         })
+
+
+UNAVAILABLE_PROVIDERS = ["outlook_calendar", "hubspot", "salesforce"]
+
+
+async def purge_demo_and_unavailable():
+    """Idempotent cleanup: remove sample data and integrations that aren't set up."""
+    demo_ids = [m["id"] for m in await db.meetings.find({"is_demo": True}, {"id": 1}).to_list(100000)]
+    if demo_ids:
+        await db.briefs.delete_many({"meeting_id": {"$in": demo_ids}})
+        await db.meeting_notes.delete_many({"meeting_id": {"$in": demo_ids}})
+    for coll in ("meetings", "contacts", "companies", "notes", "commitments"):
+        await db[coll].delete_many({"is_demo": True})
+    await db.integrations.delete_many({"provider": {"$in": UNAVAILABLE_PROVIDERS}})
 
 
 async def seed_demo_data(user_id: str):

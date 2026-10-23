@@ -13,8 +13,7 @@ const RESULT = {
 };
 
 function IntegrationCard({ r, busy, onConnect, onDisconnect, onSync }) {
-  const live = !r.requires_oauth || GOOGLE.includes(r.provider);
-  const status = r.status === "connected" ? "connected" : live ? "not_connected" : "setup_required";
+  const status = r.status === "connected" ? "connected" : "not_connected";
   const btn = "h-9 px-4 rounded-lg text-sm font-semibold flex items-center gap-2 transition-colors disabled:opacity-60";
   return (
     <Card className="p-5 bc-lift" data-testid={`integration-${r.provider}`}>
@@ -22,7 +21,7 @@ function IntegrationCard({ r, busy, onConnect, onDisconnect, onSync }) {
         <div>
           <p className="font-display font-bold">{r.name}</p>
           <p className="text-xs text-muted-foreground mt-0.5">
-            {r.account ? r.account : live ? (r.requires_oauth ? "Google sign-in · read-only" : "Available now") : "Coming soon"}
+            {r.account ? r.account : r.requires_oauth ? "Google sign-in · read-only" : "Available now"}
           </p>
           {r.last_synced_at && <p className="text-xs text-muted-foreground mt-0.5" data-testid={`last-synced-${r.provider}`}>Synced {formatDateTime(r.last_synced_at)}</p>}
           {r.error && <p className="text-xs text-destructive mt-1">{r.error}</p>}
@@ -41,12 +40,10 @@ function IntegrationCard({ r, busy, onConnect, onDisconnect, onSync }) {
               Disconnect
             </button>
           </>
-        ) : live ? (
+        ) : (
           <button onClick={onConnect} disabled={busy} data-testid={`connect-${r.provider}`} className={`${btn} bg-primary text-primary-foreground hover:bg-primary/90`}>
             {busy && <Loader2 className="h-4 w-4 animate-spin" />} Connect
           </button>
-        ) : (
-          <span className="text-xs text-muted-foreground">Needs a developer app from this provider. Ask us to switch it on.</span>
         )}
       </div>
     </Card>

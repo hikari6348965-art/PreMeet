@@ -10,7 +10,7 @@ import {
 
 
 const features = [
-  { icon: Database, title: "Unified Client Memory", desc: "Consolidate notes, CRM records, past meetings and open tasks into one living profile per client." },
+  { icon: Database, title: "Unified Client Memory", desc: "Consolidate notes, emails, past calls and open tasks into one living profile per client." },
   { icon: ShieldCheck, title: "Source-Verified Intelligence", desc: "Every factual claim links to its source. Facts, inferences and missing info are clearly separated." },
   { icon: ListChecks, title: "Forgotten-Commitment Detector", desc: "Surfaces promises you made, overdue tasks and decisions still waiting — with their origin." },
   { icon: Target, title: "Adaptive Talking Points", desc: "Three prioritised talking points and three questions, grounded in real context — never filler." },
@@ -28,9 +28,9 @@ const tabContent = {
 };
 
 const faqs = [
-  { q: "How does PreMeet avoid making things up?", a: "Every factual claim must reference a real source — a note, CRM field, calendar event or recorded commitment. When information isn't available, the brief says so explicitly instead of inventing it." },
-  { q: "Do I have to replace my CRM or calendar?", a: "No. PreMeet brings context together from the tools you already use. Calendar and CRM connections use the official OAuth flow and request only read permissions." },
-  { q: "Is my client data private?", a: "Your data is isolated per account. We never use your meeting notes or CRM records to train models, and you control retention and deletion." },
+  { q: "How does PreMeet avoid making things up?", a: "Every factual claim must reference a real source — a note, email, calendar event or recorded commitment. When information isn't available, the brief says so explicitly instead of inventing it." },
+  { q: "Do I have to replace my calendar or inbox?", a: "No. PreMeet brings context together from the tools you already use. Google Calendar and Gmail connect through Google's official sign-in and request only read permissions." },
+  { q: "Is my client data private?", a: "Your data is isolated per account. We never use your meeting notes or emails to train models, and you control retention and deletion." },
   { q: "What happens when I hit my monthly brief limit?", a: "We stop and show a clear upgrade prompt. You're never silently charged or pushed over your plan's allowance." },
 ];
 
@@ -85,13 +85,13 @@ export default function Landing() {
               <span className="h-1.5 w-1.5 rounded-full bg-signal bc-blink" /> Prep · Call · Notes
             </span>
             <h1 className="bc-rise bc-d1 mt-6 text-5xl sm:text-6xl lg:text-7xl font-bold leading-[0.98]">
-              Know the room<br />before you <span className="relative inline-block"><span className="relative z-10">walk in.</span><span className="absolute left-0 right-0 bottom-1 h-4 bg-signal -z-0" /></span>
+              Know the room<br />before you <span className="relative inline-block"><span className="relative z-10">walk in.</span><span className="absolute left-0 right-0 bottom-1 h-1.5 bg-ink -z-0" /></span>
             </h1>
             <p className="bc-rise bc-d2 mt-6 text-lg text-muted-foreground leading-relaxed max-w-xl">
               PreMeet reads your calendar, inbox and notes, hands you a one-page brief with sources, runs the call, and writes up what was decided.
             </p>
             <div className="bc-rise bc-d3 mt-8 flex flex-col sm:flex-row gap-3">
-              <Link to="/register" data-testid="hero-cta-button" className="h-12 px-6 rounded-lg bg-ink text-white font-semibold flex items-center justify-center gap-2 shadow-[4px_4px_0_0_#4F46E5] hover:shadow-[6px_6px_0_0_#4F46E5] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-[transform,box-shadow] active:translate-x-0 active:translate-y-0 active:shadow-none">
+              <Link to="/register" data-testid="hero-cta-button" className="h-12 px-6 rounded-lg bg-ink text-white font-semibold flex items-center justify-center gap-2 shadow-[4px_4px_0_0_#0B0F1A] hover:shadow-[6px_6px_0_0_#0B0F1A] hover:-translate-x-0.5 hover:-translate-y-0.5 transition-[transform,box-shadow] active:translate-x-0 active:translate-y-0 active:shadow-none">
                 Start free <ArrowRight className="h-4 w-4" />
               </Link>
               <a href="#demo" className="h-12 px-6 rounded-lg border-2 border-ink font-semibold flex items-center justify-center hover:bg-ink hover:text-white transition-colors">
@@ -185,19 +185,19 @@ export default function Landing() {
           <div>
             <span className="font-mono-label text-xs text-signal">The one-page brief</span>
             <h2 className="mt-3 text-3xl sm:text-4xl font-bold tracking-tight">Everything you need, nothing you don't</h2>
-            <p className="mt-4 text-slate-300 text-lg leading-relaxed">
+            <p className="mt-4 text-white/70 text-lg leading-relaxed">
               Scannable sections, prioritised talking points, and a citation footer so you can inspect the source of every claim.
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               {tabs.map((t) => (
                 <button key={t} onClick={() => setActiveTab(t)} data-testid={`demo-tab-${t.replace(/\s+/g, "-").toLowerCase()}`}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === t ? "bg-signal text-ink" : "bg-white/5 text-slate-300 hover:bg-white/10"}`}>
+                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === t ? "bg-signal text-ink" : "bg-white/5 text-white/70 hover:bg-white/10"}`}>
                   {t}
                 </button>
               ))}
             </div>
           </div>
-          <div className="relative rounded-2xl bg-white text-foreground p-6 shadow-[8px_8px_0_0_#4F46E5]">
+          <div className="relative rounded-2xl bg-white text-foreground p-6 shadow-[8px_8px_0_0_#0B0F1A]">
             <div className="flex items-center justify-between border-b border-border pb-4">
               <div>
                 <p className="font-mono-label text-[10px] text-muted-foreground">Project review · Today 2:00 PM</p>
@@ -223,9 +223,9 @@ export default function Landing() {
       <section className="max-w-6xl mx-auto px-5 py-20 text-center">
         <span className="font-mono-label text-xs text-primary">Brings your stack together</span>
         <h2 className="mt-3 text-3xl font-bold tracking-tight">Works with the tools you already use</h2>
-        <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Connect calendars and CRMs through official, read-only authorization. No need to replace anything.</p>
+        <p className="mt-4 text-muted-foreground max-w-xl mx-auto">Connect Google Calendar and Gmail through official, read-only authorization. No need to replace anything.</p>
         <div className="mt-10 flex flex-wrap justify-center gap-3">
-          {["Google Calendar", "Gmail", "Built-in video calls", "Manual notes & uploads", "Outlook (soon)", "HubSpot (soon)", "Salesforce (soon)"].map((n) => (
+          {["Google Calendar", "Gmail", "Built-in video calls", "Manual notes & uploads"].map((n) => (
             <span key={n} className="px-4 py-2.5 rounded-lg border border-border bg-card text-sm font-medium bc-lift">{n}</span>
           ))}
         </div>
@@ -242,7 +242,7 @@ export default function Landing() {
           <div className="mt-12 grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
             {plans.map((p) => (
               <div key={p.id} data-testid={`pricing-card-${p.id}`}
-                className={`p-6 rounded-2xl border-2 bg-card flex flex-col ${p.id === "entry" ? "border-ink shadow-[6px_6px_0_0_#4F46E5]" : "border-border bc-lift"}`}>
+                className={`p-6 rounded-2xl border-2 bg-card flex flex-col ${p.id === "entry" ? "border-ink shadow-[6px_6px_0_0_#0B0F1A]" : "border-border bc-lift"}`}>
                 <div className="flex items-center justify-between min-h-6">
                   <h3 className="font-bold text-lg">{p.name}</h3>
                   {p.id === "entry" && <span className="px-2.5 py-1 rounded-full bg-primary text-white text-xs font-semibold">Most popular</span>}
@@ -304,7 +304,7 @@ export default function Landing() {
           <div className="bc-grid-bg absolute inset-0 opacity-[0.06]" />
           <Quote className="h-8 w-8 text-signal mx-auto" />
           <h2 className="relative mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight">Never walk in unprepared again.</h2>
-          <p className="relative mt-4 text-slate-300 max-w-xl mx-auto">Start free and generate your first source-verified brief in minutes.</p>
+          <p className="relative mt-4 text-white/70 max-w-xl mx-auto">Start free and generate your first source-verified brief in minutes.</p>
           <Link to="/register" data-testid="footer-cta-button" className="relative mt-8 inline-flex h-12 px-8 rounded-lg bg-signal text-ink font-bold items-center gap-2 hover:bg-primary/90 transition-all active:scale-[0.98]">
             Start free <ArrowRight className="h-4 w-4" />
           </Link>

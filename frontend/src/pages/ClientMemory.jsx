@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useState, useMemo } from "react";
 import { api, formatApiErrorDetail } from "../lib/api";
 import { Card, PageHeader } from "../components/ui-helpers";
@@ -219,14 +220,15 @@ function Stat({ label, value }) {
   return <div className="p-3 rounded-lg bg-secondary/40 text-center"><p className="text-2xl font-extrabold">{value}</p><p className="text-xs text-muted-foreground">{label}</p></div>;
 }
 function Modal({ title, onClose, children }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="client-memory-modal">
       <div className="fixed inset-0 bg-black/40" onClick={onClose} />
-      <Card className="relative w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-5"><h2 className="font-bold text-lg">{title}</h2><button onClick={onClose} className="p-1 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button></div>
+      <Card className="relative w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto overscroll-contain">
+        <div className="flex items-center justify-between mb-5"><h2 className="font-bold text-lg">{title}</h2><button onClick={onClose} data-testid="client-memory-modal-close" className="p-1 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button></div>
         {children}
       </Card>
-    </div>
+    </div>,
+    document.body,
   );
 }
 function Inp({ label, value, onChange, required, testid }) {

@@ -37,10 +37,10 @@ export default function Register() {
           <h2 className="text-4xl font-extrabold tracking-tight leading-tight">
             Spend less time searching.<br />More time in conversation.
           </h2>
-          <p className="text-slate-300 text-lg leading-relaxed max-w-md">
+          <p className="text-white/70 text-lg leading-relaxed max-w-md">
             Start free with 3 briefs. No credit card. Turn scattered client context into a trustworthy one-page brief.
           </p>
-          <ul className="space-y-3 text-slate-300">
+          <ul className="space-y-3 text-white/70">
             {["Free starter plan", "Set up in under 2 minutes", "Your data stays isolated and private"].map((t) => (
               <li key={t} className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-primary" /> {t}

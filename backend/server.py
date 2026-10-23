@@ -243,8 +243,6 @@ async def complete_onboarding(payload: OnboardingInput, user=Depends(authmod.get
                   "default_objective": payload.default_objective, "updated_at": now_iso()}},
         upsert=True,
     )
-    if payload.load_demo_data:
-        await seed.seed_demo_data(uid)
     await audit(uid, "onboarding_complete", payload.profession)
     return {"ok": True}
 
@@ -873,6 +871,7 @@ async def startup():
     await db.briefs.create_index([("user_id", 1), ("generated_at", -1)])
     await db.usage_records.create_index([("user_id", 1), ("period", 1)], unique=True)
     await seed.ensure_plans()
+    await seed.purge_demo_and_unavailable()
     # Seed admin
     admin_email = os.environ["ADMIN_EMAIL"].lower()
     admin_password = os.environ["ADMIN_PASSWORD"]

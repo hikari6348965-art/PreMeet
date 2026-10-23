@@ -36,10 +36,10 @@ export default function Login() {
           <h2 className="text-4xl font-extrabold tracking-tight leading-tight">
             Walk into every meeting prepared.
           </h2>
-          <p className="text-slate-300 text-lg leading-relaxed max-w-md">
-            One-page briefs built from your notes, CRM and calendar — with every fact linked to its source.
+          <p className="text-white/70 text-lg leading-relaxed max-w-md">
+            One-page briefs built from your notes, inbox and calendar — with every fact linked to its source.
           </p>
-          <ul className="space-y-3 text-slate-300">
+          <ul className="space-y-3 text-white/70">
             {["Source-verified intelligence", "Forgotten-commitment detector", "Profession-specific templates"].map((t) => (
               <li key={t} className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-primary" /> {t}
@@ -94,9 +94,6 @@ export default function Login() {
               Create one
             </Link>
           </p>
-          <div className="mt-6 p-3 rounded-lg bg-secondary text-xs text-muted-foreground">
-            <span className="font-mono-label text-[10px]">Demo admin</span> — admin@briefcraft.ai / Admin@12345
-          </div>
         </div>
       </div>
     </div>

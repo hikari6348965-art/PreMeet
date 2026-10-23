@@ -39,7 +39,7 @@ export default function DashboardLayout() {
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                isActive ? "bg-white text-ink shadow-[3px_3px_0_0_#C6F432]" : "text-white/60 hover:bg-white/10 hover:text-white"
+                isActive ? "bg-white text-ink shadow-none" : "text-white/60 hover:bg-white/10 hover:text-white"
               }`
             }
           >
@@ -54,7 +54,7 @@ export default function DashboardLayout() {
             onClick={() => setOpen(false)}
             className={({ isActive }) =>
               `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                isActive ? "bg-white text-ink shadow-[3px_3px_0_0_#C6F432]" : "text-white/60 hover:bg-white/10 hover:text-white"
+                isActive ? "bg-white text-ink shadow-none" : "text-white/60 hover:bg-white/10 hover:text-white"
               }`
             }
           >
@@ -107,7 +107,7 @@ export default function DashboardLayout() {
           </button>
         </header>
         <main className="flex-1 p-5 sm:p-8 max-w-7xl w-full mx-auto">
-          <div key={location.pathname} className="bc-rise"><Outlet /></div>
+          <div key={location.pathname} className="bc-fade"><Outlet /></div>
         </main>
       </div>
     </div>

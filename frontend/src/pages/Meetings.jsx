@@ -1,3 +1,4 @@
+import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { api, formatApiErrorDetail } from "../lib/api";
@@ -80,13 +81,13 @@ export default function Meetings() {
         </div>
       )}
 
-      {showModal && (
+      {showModal && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" data-testid="add-meeting-modal">
           <div className="fixed inset-0 bg-black/40" onClick={() => setShowModal(false)} />
-          <Card className="relative w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+          <Card className="relative w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between mb-5">
               <h2 className="font-bold text-lg">Add a meeting</h2>
-              <button onClick={() => setShowModal(false)} className="p-1 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+              <button onClick={() => setShowModal(false)} data-testid="add-meeting-close" className="p-1 text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
             </div>
             <form onSubmit={create} className="space-y-4">
               <Field label="Title">
@@ -127,7 +128,8 @@ export default function Meetings() {
               </button>
             </form>
           </Card>
-        </div>
+        </div>,
+        document.body,
       )}
       <style>{`.input{margin-top:.375rem;width:100%;height:2.75rem;padding:0 .875rem;border-radius:.5rem;border:1px solid hsl(var(--input));background:hsl(var(--card));font-size:.875rem}.input:focus{outline:none;border-color:hsl(var(--primary));box-shadow:0 0 0 2px hsl(var(--ring)/.3)}`}</style>
     </div>

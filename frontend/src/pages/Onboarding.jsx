@@ -41,10 +41,10 @@ export default function Onboarding() {
     setLoading(true);
     try {
       await api.post("/onboarding", {
-        profession, tone, detail_level: detail, default_objective: objective, load_demo_data: true,
+        profession, tone, detail_level: detail, default_objective: objective, load_demo_data: false,
       });
       await refreshUser();
-      toast.success("You're all set! We loaded demo data so you can explore.");
+      toast.success("You're all set. Add your first meeting or import your calendar.");
       navigate("/app");
     } catch (err) {
       toast.error(formatApiErrorDetail(err.response?.data?.detail));
@@ -133,10 +133,10 @@ export default function Onboarding() {
             <div data-testid="onboarding-step-finish">
               <span className="font-mono-label text-xs text-primary">Step 3 of 3</span>
               <h1 className="mt-2 text-3xl font-bold tracking-tight">Ready to generate your first brief</h1>
-              <p className="mt-2 text-muted-foreground">We'll load a demo workspace with sample meetings, notes and commitments so you can see a real brief immediately.</p>
+              <p className="mt-2 text-muted-foreground">Your workspace starts empty. Add a meeting yourself or connect Google Calendar to import your real schedule.</p>
               <div className="mt-8 rounded-xl border border-border bg-card p-6 space-y-4">
                 {[
-                  "Connect Google Calendar & your CRM from the Integrations page",
+                  "Connect Google Calendar and Gmail from the Integrations page",
                   "Open an upcoming meeting and click Generate Brief",
                   "Inspect sources, edit sections, and export to PDF",
                 ].map((t, i) => (
