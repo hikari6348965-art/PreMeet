@@ -1,0 +1,24 @@
+{
+  "summary": "Checked the VideoCall error-message fix (frontend only). Host room (/app/meetings/{id}/room -> room-start-btn) and guest page (/join/{id}?k=... -> name -> guest-join-btn) both show the specific Daily message 'Video calls are paused. The PreMeet owner needs to add a payment method in the Daily.co dashboard (Billing) before calls can start.' in [data-testid=video-error]. The generic 'Couldn't connect' text did not come back after waiting another 4s. The console shows Daily's errorMsg 'account-missing-payment-method', then a second generic rejection, which fail() correctly ignores. A quick API check of POST /api/meetings/{id}/room returned url https://premeet.daily.co/bc-..., a token, invite_url and recording=false. Regression: meeting-notes, notes-upload-btn and notes-export-pdf-btn are visible, and room-copy-invite-btn shows once the room has started (by design).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "No code fix required. The user must add a payment method in the Daily.co dashboard (Billing) before calls can connect."
+  ],
+  "critical_code_review_comments": [
+    "VideoFrame.jsx: the join().catch passes e?.message, which is undefined for Daily's rejection object (console logs 'Daily call error: undefined [object Object]'). This is harmless because a specific reason is kept, but if the join promise rejects first with no specific error event, the user would only see the generic message. Consider also reading e?.errorMsg in the catch."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A (skipped; one sanity API call passed)", "frontend": "100%"},
+  "test_credentials": "admin@briefcraft.ai / Admin@12345",
+  "seed_data_creation": "None. Used existing meeting b0fa1560-ba93-4696-b7bf-4dd45ddfa9e2 ('Room test').",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Daily account returns account-missing-payment-method for all joins until billing is added. Once billing is added, retest an actual successful join (joined-meeting event, video visible, leave -> onLeft auto-process).",
+  "rca of the issue": "Daily rejects the join with errorMsg 'account-missing-payment-method' (an account billing setting). Previously, a later generic join rejection overwrote the specific message. fail() now keeps the first specific reason. Verified fixed."
+}

@@ -37,7 +37,7 @@ export function VideoFrame({ url, token, onLeft, onJoined }) {
     frame.on("joined-meeting", () => { if (!active) return; setJoining(false); handlers.current.onJoined?.(); });
     frame.on("left-meeting", () => { if (active && !failed) handlers.current.onLeft?.(); });
     frame.on("error", (e) => fail(e?.errorMsg || e?.error?.type, JSON.stringify(e)));
-    frame.join({ url, token }).then(() => { if (active) setJoining(false); }).catch((e) => fail(e?.message, String(e)));
+    frame.join({ url, token }).then(() => { if (active) setJoining(false); }).catch((e) => fail(e?.errorMsg || e?.message, String(e)));
     return () => { active = false; frame.destroy(); };
   }, [url, token]);
 
