@@ -147,7 +147,7 @@ export default function Onboarding() {
                 ))}
               </div>
               <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
-                <Sparkles className="h-4 w-4 text-primary" /> Powered by Claude · every claim links to its source
+                <Sparkles className="h-4 w-4 text-primary" /> Powered by Groq · every claim links to its source
               </div>
             </div>
           )}
