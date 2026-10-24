@@ -853,7 +853,11 @@ app.include_router(routes_extra.router)
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=[os.environ.get("FRONTEND_URL", "http://localhost:3000"), "http://localhost:3000"],
+    allow_origins=[
+        os.environ.get("FRONTEND_URL", "http://localhost:3000"), 
+        "http://localhost:3000",
+        "https://www.premeet.ink"
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
