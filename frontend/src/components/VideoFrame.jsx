@@ -46,7 +46,8 @@ export function VideoFrame({ url, token, onLeft, onJoined }) {
       <div ref={host} className={`absolute inset-0 ${error ? "invisible" : ""}`} />
       {joining && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-3 pointer-events-none">
-          <Loader2 className="h-6 w-6 animate-spin" /> <span className="text-sm">Opening the room…</span>
+          <Loader2 className="h-6 w-6 animate-spin" /> 
+          <span className="text-sm">Opening the room…</span>
         </div>
       )}
       {error && (

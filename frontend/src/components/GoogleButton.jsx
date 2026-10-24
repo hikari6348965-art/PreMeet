@@ -1,8 +1,17 @@
+
 export function startGoogleLogin() {
-  // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
-  const redirectUrl = window.location.origin + "/app";
-  window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
+  const backend = import.meta.env.VITE_REACT_APP_BACKEND_URL;
+
+  if (!backend) {
+    console.error("Backend URL is not configured.");
+    return;
+  }
+
+  window.location.assign(
+    `${backend.replace(/\/$/, "")}/api/auth/google`
+  );
 }
+
 
 export function GoogleButton({ label = "Continue with Google", testid = "google-login-btn" }) {
   return (

@@ -31,10 +31,17 @@ import google_service
 import routes_extra
 import asyncio
 
-_bg_tasks = set()
+
+from urllib.parse import urlencode
+from starlette.responses import RedirectResponse
+from starlette.concurrency import run_in_threadpool
+from google.oauth2 import id_token
+from google.auth.transport.requests import Request as GoogleRequest
+
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+_bg_tasks = set()
 
 app = FastAPI(title="PreMeet")
 api = APIRouter(prefix="/api")
@@ -109,42 +116,175 @@ async def register(payload: RegisterInput, request: Request, response: Response)
             "onboarded": False, "token": access}
 
 
-class GoogleSessionInput(BaseModel):
-    session_id: str
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+
+@api.get("/auth/google")
+async def google_login_start():
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+
+    if not client_id or not redirect_uri:
+        raise HTTPException(
+            status_code=500,
+            detail="Google login is not configured."
+        )
+
+    state = pysecrets.token_urlsafe(32)
+
+    params = {
+        "client_id": client_id,
+        "redirect_uri": redirect_uri,
+        "response_type": "code",
+        "scope": "openid email profile",
+        "state": state,
+    }
+
+    response = RedirectResponse(
+        f"{GOOGLE_AUTH_URL}?{urlencode(params)}",
+        status_code=302,
+    )
+
+    response.set_cookie(
+        key="google_oauth_state",
+        value=state,
+        httponly=True,
+        secure=True,
+        samesite="lax",
+        max_age=600,
+        path="/",
+    )
+
+    return response
 
 
-@api.post("/auth/google-session")
-async def google_session(payload: GoogleSessionInput, response: Response):
+@api.get("/auth/google/callback")
+async def google_login_callback(
+    request: Request,
+    code: str | None = None,
+    state: str | None = None,
+    error: str | None = None,
+):
+    frontend = os.environ.get(
+        "FRONTEND_URL", "https://www.premeet.ink"
+    ).rstrip("/")
+
+    def login_error():
+        return RedirectResponse(
+            f"{frontend}/login?google_error=1",
+            status_code=303,
+        )
+
+    if error or not code or not state:
+        return login_error()
+
+    expected_state = request.cookies.get("google_oauth_state")
+
+    if not expected_state or not pysecrets.compare_digest(
+        state, expected_state
+    ):
+        logger.warning("Google OAuth state validation failed")
+        return login_error()
+
+    client_id = os.environ.get("GOOGLE_CLIENT_ID")
+    client_secret = os.environ.get("GOOGLE_CLIENT_SECRET")
+    redirect_uri = os.environ.get("GOOGLE_REDIRECT_URI")
+
+    if not client_id or not client_secret or not redirect_uri:
+        logger.error("Google OAuth environment variables are missing")
+        return login_error()
+
     try:
-        async with httpx.AsyncClient(timeout=15) as c:
-            r = await c.get("https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
-                            headers={"X-Session-ID": payload.session_id})
-    except httpx.HTTPError as e:
-        logger.error(f"Google session exchange failed: {e}")
-        raise HTTPException(status_code=503, detail="Google sign-in is temporarily unavailable. Please try again.")
-    if r.status_code != 200:
-        raise HTTPException(status_code=401, detail="Google sign-in failed. Please try again.")
-    info = r.json()
-    email = (info.get("email") or "").lower()
-    if not email:
-        raise HTTPException(status_code=401, detail="Google didn't share an email address.")
+        async with httpx.AsyncClient(timeout=20) as client:
+            token_response = await client.post(
+                GOOGLE_TOKEN_URL,
+                data={
+                    "code": code,
+                    "client_id": client_id,
+                    "client_secret": client_secret,
+                    "redirect_uri": redirect_uri,
+                    "grant_type": "authorization_code",
+                },
+                headers={"Accept": "application/json"},
+            )
+            token_response.raise_for_status()
+            token_data = token_response.json()
+
+        google_id_token = token_data.get("id_token")
+        if not google_id_token:
+            return login_error()
+
+        # Verify Google's token signature, issuer, expiry, and audience.
+        claims = await run_in_threadpool(
+            id_token.verify_oauth2_token,
+            google_id_token,
+            GoogleRequest(),
+            client_id,
+        )
+
+        email = (claims.get("email") or "").strip().lower()
+
+        if not email or claims.get("email_verified") is not True:
+            return login_error()
+
+        name = claims.get("name") or email.split("@")[0]
+        picture = claims.get("picture")
+
+    except Exception:
+        logger.exception("Google OAuth verification failed")
+        return login_error()
+
+    # Reuse PreMeet's existing account and subscription logic.
     user = await db.users.find_one({"email": email})
+
     if user:
         uid = str(user["_id"])
-        await db.users.update_one({"_id": user["_id"]}, {"$set": {"picture": info.get("picture"), "google_linked": True}})
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {
+                "picture": picture,
+                "google_linked": True,
+            }},
+        )
     else:
-        user = {"email": email, "name": info.get("name") or email.split("@")[0], "role": "user",
-                "profession": None, "onboarded": False, "picture": info.get("picture"),
-                "google_linked": True, "created_at": now_iso()}
-        uid = str((await db.users.insert_one(dict(user))).inserted_id)
+        user = {
+            "email": email,
+            "name": name,
+            "role": "user",
+            "profession": None,
+            "onboarded": False,
+            "picture": picture,
+            "google_linked": True,
+            "created_at": now_iso(),
+        }
+
+        uid = str(
+            (await db.users.insert_one(dict(user))).inserted_id
+        )
+
         await seed.ensure_user_subscription(uid)
         await seed.ensure_integration_rows(uid)
         await seed.ensure_preferences(uid)
+
     access = authmod.create_access_token(uid, email)
-    authmod.set_auth_cookies(response, access, authmod.create_refresh_token(uid))
+    refresh = authmod.create_refresh_token(uid)
+
+    # The URL fragment is not sent to the web server in an HTTP request.
+    destination = f"{frontend}/auth/callback#token={access}"
+    response = RedirectResponse(destination, status_code=303)
+
+    response.delete_cookie(
+        "google_oauth_state",
+        path="/",
+        secure=True,
+        httponly=True,
+        samesite="lax",
+    )
+
+    authmod.set_auth_cookies(response, access, refresh)
     await audit(uid, "login_google", email)
-    return {"id": uid, "email": email, "name": user.get("name"), "role": user.get("role", "user"),
-            "onboarded": user.get("onboarded", False), "profession": user.get("profession"), "token": access}
+
+    return response
 
 
 @api.post("/auth/login")
