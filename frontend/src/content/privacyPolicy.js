@@ -123,7 +123,7 @@ export const PRIVACY_SECTIONS = [
         "Audio from recordings, which is sent for speech-to-text transcription.",
       ] },
       "We aim to send only the information reasonably needed for the feature you are using.",
-      "Our current AI providers include Anthropic (language models used to write briefs and extract meeting notes) and OpenAI (speech-to-text transcription of recordings). These providers may change as the service develops, and we will update this policy or our product disclosures when they do.",
+      "Our current AI providers include Groq (language models used to write briefs and extract meeting notes) and OpenAI (speech-to-text transcription of recordings). These providers may change as the service develops, and we will update this policy or our product disclosures when they do.",
       "AI processing is not a guarantee of accuracy. You remain responsible for reviewing important recommendations and decisions.",
       "We do not claim that information is excluded from AI-provider training, or retained only temporarily, beyond what the applicable provider terms and our actual configuration support.",
     ],

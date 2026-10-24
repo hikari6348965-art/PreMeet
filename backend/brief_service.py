@@ -3,7 +3,7 @@ import os
 import json
 import logging
 from datetime import datetime, timezone
-from anthropic import AsyncAnthropic
+from groq import AsyncGroq
 
 logger = logging.getLogger(__name__)
 
@@ -134,9 +134,9 @@ async def generate_brief(
     detail_level: str,
     template: str,
 ) -> dict:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY")
     if not api_key:
-        raise RuntimeError("ANTHROPIC_API_KEY environment variable is missing")
+        raise RuntimeError("GROQ_API_KEY environment variable is missing")
 
     system = (
         SYSTEM_PROMPT
@@ -145,42 +145,50 @@ async def generate_brief(
         + f" Brief template: {template}."
     )
 
-    client = AsyncAnthropic(api_key=api_key)
+    client = AsyncGroq(api_key=api_key)
 
     try:
-        response = await client.messages.create(
+        response = await client.chat.completions.create(
             model=os.environ.get(
-                "ANTHROPIC_MODEL",
-                "claude-sonnet-4-6",
+                "GROQ_MODEL",
+                "llama-3.3-70b-versatile",
             ),
-            max_tokens=8192,
-            system=system,
             messages=[
+                {
+                    "role": "system",
+                    "content": system,
+                },
                 {
                     "role": "user",
                     "content": (
                         "Generate the meeting brief JSON from this context:\n\n"
                         f"{context}"
                     ),
-                }
+                },
             ],
+            temperature=0.2,
+            max_tokens=8192,
+            response_format={"type": "json_object"},
         )
+
     except Exception:
-        logger.exception("Anthropic meeting brief request failed")
+        logger.exception("Groq meeting brief request failed")
         raise
 
-    raw = "".join(
-        block.text
-        for block in response.content
-        if block.type == "text"
-    )
+    finally:
+        await client.close()
 
+    raw = response.choices[0].message.content or ""
     cleaned = _strip_json(raw)
 
     try:
         data = json.loads(cleaned)
     except json.JSONDecodeError as e:
-        logger.error("Brief JSON parse failed: %s; raw: %s", e, raw[:500])
+        logger.error(
+            "Brief JSON parse failed: %s; raw: %s",
+            e,
+            raw[:500],
+        )
         raise ValueError("AI returned invalid JSON") from e
 
     if not isinstance(data, dict):

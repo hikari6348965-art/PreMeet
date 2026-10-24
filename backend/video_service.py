@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 import httpx
 import imageio_ffmpeg
-from anthropic import AsyncAnthropic
+from groq import AsyncGroq
 from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
@@ -30,12 +30,14 @@ async def daily(method: str, path: str, **kw) -> dict:
         r = await c.request(
             method, DAILY_API + path, headers=_h(), **kw
         )
+
     if r.status_code >= 400:
         logger.error(
             "Daily %s %s failed: %s %s",
             method, path, r.status_code, r.text[:300],
         )
         r.raise_for_status()
+
     return r.json()
 
 
@@ -139,17 +141,21 @@ async def transcribe_file(src: str) -> str:
     client = AsyncOpenAI(
         api_key=os.environ["OPENAI_API_KEY"]
     )
+
     texts = []
 
-    with tempfile.TemporaryDirectory() as tmp:
-        for part in transcode_and_split(src, tmp):
-            with open(part, "rb") as f:
-                resp = await client.audio.transcriptions.create(
-                    file=f,
-                    model="whisper-1",
-                    response_format="json",
-                )
-            texts.append(resp.text)
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            for part in transcode_and_split(src, tmp):
+                with open(part, "rb") as f:
+                    resp = await client.audio.transcriptions.create(
+                        file=f,
+                        model="whisper-1",
+                        response_format="json",
+                    )
+                texts.append(resp.text)
+    finally:
+        await client.close()
 
     return "\n".join(
         t.strip() for t in texts if t and t.strip()
@@ -162,6 +168,7 @@ async def finished_recordings(room: str) -> list[dict]:
         "/recordings",
         params={"room_name": room, "limit": 20},
     )
+
     return [
         r for r in data.get("data", [])
         if r.get("status") == "finished"
@@ -185,6 +192,7 @@ async def transcribe_recording(recording_id: str) -> str:
                 "GET", link["download_link"]
             ) as r:
                 r.raise_for_status()
+
                 with open(src, "wb") as f:
                     async for chunk in r.aiter_bytes():
                         f.write(chunk)
@@ -204,13 +212,14 @@ Use only what is in the transcript. Never invent owners, dates or numbers. Empty
 
 
 async def extract_notes(transcript: str, meeting: dict) -> dict:
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    api_key = os.environ.get("GROQ_API_KEY")
+
     if not api_key:
         raise RuntimeError(
-            "ANTHROPIC_API_KEY environment variable is missing"
+            "GROQ_API_KEY environment variable is missing"
         )
 
-    client = AsyncAnthropic(api_key=api_key)
+    client = AsyncGroq(api_key=api_key)
 
     msg = (
         f"Meeting: {meeting.get('title')}\n"
@@ -219,27 +228,41 @@ async def extract_notes(transcript: str, meeting: dict) -> dict:
         f"\n\nTranscript:\n{transcript[:120000]}"
     )
 
-    response = await client.messages.create(
-        model=os.environ.get(
-            "ANTHROPIC_MODEL", "claude-sonnet-4-6"
-        ),
-        max_tokens=4096,
-        system=EXTRACT_PROMPT,
-        messages=[
-            {"role": "user", "content": msg}
-        ],
-    )
+    try:
+        response = await client.chat.completions.create(
+            model=os.environ.get(
+                "GROQ_MODEL",
+                "llama-3.3-70b-versatile",
+            ),
+            messages=[
+                {
+                    "role": "system",
+                    "content": EXTRACT_PROMPT,
+                },
+                {
+                    "role": "user",
+                    "content": msg,
+                },
+            ],
+            temperature=0.2,
+            max_tokens=4096,
+            response_format={"type": "json_object"},
+        )
+    except Exception:
+        logger.exception("Groq meeting note extraction failed")
+        raise
+    finally:
+        await client.close()
 
-    raw = "".join(
-        block.text
-        for block in response.content
-        if block.type == "text"
+    raw = (
+        response.choices[0].message.content or ""
     ).strip()
 
     start, end = raw.find("{"), raw.rfind("}")
+
     if start == -1 or end == -1 or end < start:
         raise ValueError(
-            "Anthropic returned no valid JSON object"
+            "Groq returned no valid JSON object"
         )
 
     try:
