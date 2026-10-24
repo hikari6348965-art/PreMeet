@@ -25,7 +25,7 @@ import TermsOfService from "./pages/TermsOfService";
 
 function AppRoutes() {
   const location = useLocation();
-  if (location.hash?.includes("session_id=")) return <AuthCallback />;
+  if (location.hash?.includes("token=")) return <AuthCallback />;
   return (
           <Routes>
             <Route path="/" element={<Landing />} />
