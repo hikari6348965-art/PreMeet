@@ -63,7 +63,7 @@ export default function BriefViewer() {
   return (
     <div data-testid="brief-viewer-page">
       <UpgradeDialog open={!!quotaMsg} onOpenChange={(o) => !o && setQuotaMsg("")} message={quotaMsg} />
-      <Link to="/app/meetings" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 print:hidden">
+      <Link to="/app/meetings" style={{ marginTop: "18px", marginBottom: "18px" }} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground mb-5 print:hidden">
         <ArrowLeft className="h-4 w-4" /> Back to meetings
       </Link>
 
