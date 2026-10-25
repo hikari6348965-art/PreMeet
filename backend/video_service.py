@@ -5,12 +5,10 @@ import logging
 import tempfile
 import subprocess
 import glob
-from datetime import datetime, timezone
 
 import httpx
 import imageio_ffmpeg
 from groq import AsyncGroq
-from openai import AsyncOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -40,9 +38,7 @@ async def daily(method: str, path: str, **kw) -> dict:
 
     return r.json()
 
-
 _can_record = None
-
 
 async def create_room(name: str, exp: int) -> tuple[dict, bool]:
     global _can_record
@@ -136,31 +132,55 @@ def transcode_and_split(src: str, tmp: str) -> list[str]:
         if 1024 < os.path.getsize(p) <= MAX_UPLOAD
     ]
 
-
 async def transcribe_file(src: str) -> str:
-    client = AsyncOpenAI(
-        api_key=os.environ["OPENAI_API_KEY"]
-    )
+    api_key = os.environ.get("GROQ_API_KEY")
 
+    if not api_key:
+        raise RuntimeError(
+            "GROQ_API_KEY environment variable is missing"
+        )
+
+    client = AsyncGroq(api_key=api_key)
     texts = []
 
     try:
         with tempfile.TemporaryDirectory() as tmp:
-            for part in transcode_and_split(src, tmp):
+            parts = transcode_and_split(src, tmp)
+
+            if not parts:
+                raise ValueError(
+                    "Audio transcoding produced no valid audio segments"
+                )
+
+            for index, part in enumerate(parts, start=1):
+                logger.info(
+                    "Transcribing audio segment %d/%d with Groq",
+                    index,
+                    len(parts),
+                )
+
                 with open(part, "rb") as f:
                     resp = await client.audio.transcriptions.create(
-                        file=f,
-                        model="whisper-1",
+                        file=(os.path.basename(part), f, "audio/mpeg"),
+                        model=os.environ.get(
+                            "GROQ_TRANSCRIPTION_MODEL",
+                            "whisper-large-v3-turbo",
+                        ),
                         response_format="json",
+                        temperature=0.0,
                     )
-                texts.append(resp.text)
+
+                if resp.text and resp.text.strip():
+                    texts.append(resp.text.strip())
+
+    except Exception:
+        logger.exception("Groq audio transcription failed")
+        raise
+
     finally:
         await client.close()
 
-    return "\n".join(
-        t.strip() for t in texts if t and t.strip()
-    )
-
+    return "\n\n".join(texts)
 
 async def finished_recordings(room: str) -> list[dict]:
     data = await daily(

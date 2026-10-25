@@ -127,7 +127,7 @@ def test_notes_pdf(users, meeting):
     assert b["s"].get(f"{API}/meetings/{meeting['id']}/notes/pdf").status_code == 404
 
 
-# --- Upload recording -> whisper -> Claude ---
+# --- Upload recording -> whisper -> Groq ---
 def test_upload_bad_ext_400(users, meeting2):
     a, _ = users
     r = a["s"].post(f"{API}/meetings/{meeting2['id']}/notes/upload",
