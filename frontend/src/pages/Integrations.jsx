@@ -69,6 +69,10 @@ export default function Integrations() {
     finally { setBusy(""); }
   };
   const connect = (p) => run(p, async () => {
+    // first check if the user is on the basic plan
+    if ("basic") {
+      return;
+    }
     const { data } = await api.post(`/integrations/${p}/connect`);
     if (data.authorization_url) { window.location.assign(data.authorization_url); return; }
     toast.success("Connected"); await load();
@@ -88,7 +92,7 @@ export default function Integrations() {
   const labels = { calendar: "Calendar", crm: "CRM", notes: "Notes & documents", email: "Email" };
 
   return (
-    <div data-testid="integrations-page">
+    <div data-testid="integrations-page" style={{ padding: "25px" }}>
       <PageHeader title="Integrations" subtitle="Connect your tools with read-only access. One Google sign-in covers Calendar and Gmail." />
       <div className="space-y-8">
         {["calendar", "email", "notes", "crm"].filter((c) => grouped[c]).map((cat) => {

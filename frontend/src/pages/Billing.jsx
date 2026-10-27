@@ -83,7 +83,7 @@ export default function Billing() {
   const ctaLabel = (p) => p.price_monthly === 0 ? "Switch to free" : p.order > currentOrder ? `Upgrade to ${p.name}` : `Switch to ${p.name}`;
 
   return (
-    <div data-testid="billing-page">
+    <div data-testid="billing-page" style={{padding: "25px"}}>
       <PageHeader title="Billing" subtitle="Pick the plan that fits how many meetings you prep for." />
       <CurrentPlan sub={sub} usage={usage} />
       <div className="grid md:grid-cols-3 gap-5">

@@ -71,7 +71,7 @@ export default function ClientMemory() {
   if (!contacts) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
-    <div data-testid="client-memory-page">
+    <div data-testid="client-memory-page" style={{ padding: "25px" }}>
       <PageHeader title="Client Memory" subtitle="A unified profile per client — notes, commitments and meeting history with their sources."
         action={
           <button onClick={() => setShowAdd(true)} data-testid="add-contact-button"

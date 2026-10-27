@@ -10,7 +10,7 @@ import {
 export default function Dashboard() {
   const [data, setData] = useState(null);
 
-  useEffect(() => { api.get("/dashboard").then(({ data }) => setData(data)).catch(() => {}); }, []);
+  useEffect(() => { api.get("/dashboard").then(({ data }) => setData(data)).catch(() => { }); }, []);
 
   if (!data) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
@@ -26,7 +26,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div data-testid="dashboard-page">
+    <div data-testid="dashboard-page" style={{ padding: "25px" }}>
       <PageHeader title={`Good to see you`} subtitle="Here's what's ahead and what needs your attention." />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-7">

@@ -61,7 +61,7 @@ export default function Settings() {
 
   useEffect(() => {
     api.get("/preferences").then(({ data }) => setPref(data)).catch(() => setError(true));
-    api.get("/usage").then(({ data }) => setUsage(data)).catch(() => {});
+    api.get("/usage").then(({ data }) => setUsage(data)).catch(() => { });
   }, []);
 
   const set = (k) => (v) => setPref((p) => ({ ...p, [k]: v }));
@@ -81,7 +81,7 @@ export default function Settings() {
   if (!pref) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
-    <div data-testid="settings-page">
+    <div data-testid="settings-page" style={{ padding: "25px" }}>
       <PageHeader title="Settings" subtitle="Tune how your briefs are written and delivered." />
       <div className="grid lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

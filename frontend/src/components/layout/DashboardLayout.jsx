@@ -104,7 +104,7 @@ export default function DashboardLayout() {
             {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </header>
-        <main className="flex-1 p-5 sm:p-8 max-w-7xl w-full mx-auto" style={{ padding: "5px" }}>
+        <main className="flex-1 p-5 sm:p-8 max-w-7xl w-full mx-auto" style={{ padding: "25px" }}>
           <div key={location.pathname} className="bc-fade"><Outlet /></div>
         </main>
       </div>
