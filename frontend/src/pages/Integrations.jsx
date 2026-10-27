@@ -72,7 +72,8 @@ export default function Integrations() {
     const { data } = await api.post(`/integrations/${p}/connect`);
     if (data.status == "rejected") {
       // reroute to the billing page
-      window?.location.href = "https://www.premeet.ink/app/billing";
+      window.location.href = "https://www.premeet.ink/app/billing";
+      return;
     }
     else {
       if (data.authorization_url) { window.location.assign(data.authorization_url); return; }
