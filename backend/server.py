@@ -74,11 +74,11 @@ async def get_plan_for_user(user_id: str) -> dict:
     if not sub:
         await seed.ensure_user_subscription(user_id)
         sub = await db.subscriptions.find_one({"user_id": user_id})
-    if sub["plan_id"] != "free" and sub.get("current_period_end") and sub["current_period_end"] < now_iso():
+    if sub["plan_id"] != "free" and sub.get("current_period_end") and sub["current_period_end"] < now_iso(): #type: ignore
         await db.subscriptions.update_one({"user_id": user_id}, {"$set": {"plan_id": "free", "status": "expired"}})
         sub = await db.subscriptions.find_one({"user_id": user_id})
-    plan = await db.plans.find_one({"id": sub["plan_id"]}, {"_id": 0})
-    sub.pop("_id", None)
+    plan = await db.plans.find_one({"id": sub["plan_id"]}, {"_id": 0}) #type: ignore
+    sub.pop("_id", None) #type: ignore
     return {"plan": plan, "subscription": sub}
 
 
@@ -474,7 +474,7 @@ async def update_meeting(meeting_id: str, payload: MeetingUpdate, user=Depends(a
     res = await db.meetings.update_one({"id": meeting_id, "user_id": user["id"]}, {"$set": updates})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    return clean(await db.meetings.find_one({"id": meeting_id}))
+    return clean(await db.meetings.find_one({"id": meeting_id})) # type: ignore
 
 
 @api.delete("/meetings/{meeting_id}")
@@ -517,7 +517,7 @@ async def update_contact(contact_id: str, payload: ContactInput, user=Depends(au
     res = await db.contacts.update_one({"id": contact_id, "user_id": user["id"]}, {"$set": updates})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Contact not found")
-    return clean(await db.contacts.find_one({"id": contact_id, "user_id": user["id"]}))
+    return clean(await db.contacts.find_one({"id": contact_id, "user_id": user["id"]})) # type: ignore
 
 
 @api.delete("/contacts/{contact_id}")
@@ -548,9 +548,9 @@ async def create_note(payload: NoteInput, user=Depends(authmod.get_current_user)
 
 
 @api.post("/notes/upload")
-async def upload_note(file: UploadFile = File(...), contact_id: str = None,
-                      user=Depends(authmod.get_current_user)):
+async def upload_note(file: UploadFile = File(...), contact_id: str = None, user=Depends(authmod.get_current_user)): # type: ignore
     allowed = (".txt", ".md", ".csv")
+    assert file.filename is not None
     if not file.filename.lower().endswith(allowed):
         raise HTTPException(status_code=400, detail="Only .txt, .md, .csv files are supported")
     content = (await file.read())[:200000].decode("utf-8", errors="ignore")
@@ -589,7 +589,7 @@ async def update_commitment(commitment_id: str, payload: CommitmentUpdate, user=
     res = await db.commitments.update_one({"id": commitment_id, "user_id": user["id"]}, {"$set": updates})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Commitment not found")
-    return clean(await db.commitments.find_one({"id": commitment_id}))
+    return clean(await db.commitments.find_one({"id": commitment_id})) # type: ignore
 
 
 # ============ BRIEFS ============
@@ -619,8 +619,7 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
     notes = await db.notes.find({"user_id": uid, "contact_id": meeting.get("contact_id")}).to_list(50) if meeting.get("contact_id") else []
     commitments = await db.commitments.find({"user_id": uid, "contact_id": meeting.get("contact_id")}).to_list(50) if meeting.get("contact_id") else []
     notes = [clean(n) for n in notes]
-    past_calls = await db.meeting_notes.find({"user_id": uid, "status": "ready", "meeting_id": {"$ne": meeting["id"]}},
-                                             {"_id": 0}).to_list(200)
+    past_calls = await db.meeting_notes.find({"user_id": uid, "status": "ready", "meeting_id": {"$ne": meeting["id"]}}, {"_id": 0}).to_list(200)
     if meeting.get("contact_id") and past_calls:
         related = {m["id"]: m for m in await db.meetings.find(
             {"user_id": uid, "contact_id": meeting["contact_id"]}, {"_id": 0}).to_list(200)}
@@ -633,15 +632,12 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
     if gmail_row and emails:
         try:
             for t in await google_service.gmail_threads(uid, emails):
-                notes.append({"source_type": "gmail", "title": t["subject"], "created_at": t["date"],
-                              "content": f"From {t['from']}: {t['snippet']}"})
+                notes.append({"source_type": "gmail", "title": t["subject"], "created_at": t["date"], "content": f"From {t['from']}: {t['snippet']}"})
         except Exception as e:
             logger.warning(f"Gmail context skipped: {e}")
     pref = await db.preferences.find_one({"user_id": uid}) or {}
     template = payload.template or pref.get("default_template", "consultant")
-    context = brief_service.build_context(clean(meeting), clean(contact) if contact else None,
-                                          clean(company) if company else None,
-                                          notes, [clean(c) for c in commitments])
+    context = brief_service.build_context(clean(meeting), clean(contact) if contact else None, clean(company) if company else None, notes, [clean(c) for c in commitments])
     try:
         content = await brief_service.generate_brief(
             context, pref.get("tone", "professional"),
@@ -685,8 +681,8 @@ async def email_brief(brief_id: str, user=Depends(authmod.get_current_user)):
     if b.get("email_status") == "sent" and b.get("emailed_at") and b["emailed_at"] > (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat():
         raise HTTPException(status_code=429, detail="Please wait a minute before sending again.")
     meeting = await db.meetings.find_one({"id": b["meeting_id"], "user_id": user["id"]}, {"_id": 0})
-    await email_service.send_brief_ready(user, meeting, b)
-    status = (await db.briefs.find_one({"id": brief_id}, {"email_status": 1}))["email_status"]
+    await email_service.send_brief_ready(user, meeting, b) # type: ignore
+    status = (await db.briefs.find_one({"id": brief_id}, {"email_status": 1}))["email_status"] # type: ignore
     if status != "sent":
         raise HTTPException(status_code=503, detail="Email is temporarily unavailable. Please try again later.")
     return {"ok": True, "email_status": status}
@@ -712,7 +708,7 @@ async def edit_brief(brief_id: str, payload: BriefEditInput, user=Depends(authmo
                                      {"$set": {"content": payload.content, "edited": True}})
     if res.matched_count == 0:
         raise HTTPException(status_code=404, detail="Brief not found")
-    return clean(await db.briefs.find_one({"id": brief_id}))
+    return clean(await db.briefs.find_one({"id": brief_id})) # type: ignore
 
 
 @api.post("/briefs/{brief_id}/regenerate-section")
@@ -725,12 +721,10 @@ async def regenerate_section(brief_id: str, payload: RegenerateSectionInput, use
     notes = await db.notes.find({"user_id": user["id"], "contact_id": meeting.get("contact_id")}).to_list(50) if meeting and meeting.get("contact_id") else []
     commitments = await db.commitments.find({"user_id": user["id"], "contact_id": meeting.get("contact_id")}).to_list(50) if meeting and meeting.get("contact_id") else []
     pref = await db.preferences.find_one({"user_id": user["id"]}) or {}
-    context = brief_service.build_context(clean(meeting), clean(contact) if contact else None, None,
+    context = brief_service.build_context(clean(meeting), clean(contact) if contact else None, None, # type: ignore
                                           [clean(n) for n in notes], [clean(c) for c in commitments])
     try:
-        fresh = await brief_service.generate_brief(context, pref.get("tone", "professional"),
-                                                   pref.get("detail_level", "balanced"),
-                                                   b.get("template", "consultant"))
+        fresh = await brief_service.generate_brief(context, pref.get("tone", "professional"), pref.get("detail_level", "balanced"), b.get("template", "consultant"))
     except Exception:
         raise HTTPException(status_code=500, detail="Regeneration failed. Please retry.")
     section = payload.section
@@ -738,16 +732,14 @@ async def regenerate_section(brief_id: str, payload: RegenerateSectionInput, use
     if section in fresh:
         content[section] = fresh[section]
     await db.briefs.update_one({"id": brief_id}, {"$set": {"content": content, "edited": True}})
-    return clean(await db.briefs.find_one({"id": brief_id}))
+    return clean(await db.briefs.find_one({"id": brief_id})) # type: ignore
 
 
 @api.post("/briefs/feedback")
 async def brief_feedback(payload: FeedbackInput, user=Depends(authmod.get_current_user)):
     fb = {"type": payload.type, "section": payload.section, "created_at": now_iso()}
-    await db.briefs.update_one({"id": payload.brief_id, "user_id": user["id"]},
-                               {"$push": {"feedback": fb}})
-    await db.feedback.insert_one({"id": new_id(), "user_id": user["id"],
-                                  "brief_id": payload.brief_id, **fb})
+    await db.briefs.update_one({"id": payload.brief_id, "user_id": user["id"]}, {"$push": {"feedback": fb}})
+    await db.feedback.insert_one({"id": new_id(), "user_id": user["id"], "brief_id": payload.brief_id, **fb})
     return {"ok": True}
 
 
@@ -755,8 +747,7 @@ async def brief_feedback(payload: FeedbackInput, user=Depends(authmod.get_curren
 async def delete_brief(brief_id: str, user=Depends(authmod.get_current_user)):
     b = await db.briefs.find_one({"id": brief_id, "user_id": user["id"]})
     if b:
-        await db.meetings.update_one({"id": b["meeting_id"]},
-                                     {"$set": {"status": "scheduled", "brief_id": None}})
+        await db.meetings.update_one({"id": b["meeting_id"]}, {"$set": {"status": "scheduled", "brief_id": None}})
     await db.briefs.delete_one({"id": brief_id, "user_id": user["id"]})
     return {"ok": True}
 
@@ -775,15 +766,25 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
     if not row:
         raise HTTPException(status_code=404, detail="Unknown integration")
     # Honest status: OAuth-based providers are NOT configured yet in this MVP.
-    if provider in google_service.GOOGLE_PROVIDERS:
-        return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
-    if row.get("requires_oauth"):
-        return {"ok": False, "status": "setup_required", "provider": provider,
-                "message": f"{row['name']} uses the official OAuth flow. Connect this integration once OAuth credentials are configured. No fabricated data is shown until a real connection is established."}
-    await db.integrations.update_one(
-        {"user_id": user["id"], "provider": provider},
-        {"$set": {"status": "connected", "connected_at": now_iso()}})
-    return {"ok": True, "status": "connected", "provider": provider}
+    # check the plan of the integration
+    planObject = await db.plans.find_one({"id": row.id})
+    if planObject:
+        integrationPlan = planObject["id"]
+        # retreive the subscription plan of the user
+        subscriptionPlan = await db.subscriptions.find_one({"user_id": user["id"]})
+        if integrationPlan is subscriptionPlan["plan_id"]: #type: ignore
+            if provider in google_service.GOOGLE_PROVIDERS:
+                return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
+            if row.get("requires_oauth"):
+                return {"ok": False, "status": "setup_required", "provider": provider,
+                        "message": f"{row['name']} uses the official OAuth flow. Connect this integration once OAuth credentials are configured. No fabricated data is shown until a real connection is established."}
+            await db.integrations.update_one(
+                {"user_id": user["id"], "provider": provider},
+                {"$set": {"status": "connected", "connected_at": now_iso()}})
+            return {"ok": True, "status": "connected", "provider": provider}
+        else:
+            # re-route the user to the upgrade-page
+            return {"ok": False, "status": "rejected", "provider": "system"}
 
 
 @api.post("/integrations/{provider}/disconnect")
@@ -804,8 +805,7 @@ async def usage_endpoint(user=Depends(authmod.get_current_user)):
     usage = await get_usage(uid)
     plan_info = await get_plan_for_user(uid)
     history = await db.briefs.find({"user_id": uid}).sort("generated_at", -1).limit(50).to_list(50)
-    return {"usage": usage, "plan": plan_info["plan"], "subscription": plan_info["subscription"],
-            "history": [clean(b) for b in history]}
+    return {"usage": usage, "plan": plan_info["plan"], "subscription": plan_info["subscription"], "history": [clean(b) for b in history]}
 
 
 # ============ PLANS & BILLING ============
@@ -877,21 +877,18 @@ async def _mark_order_paid(order: dict, payment_id: str):
 
 @api.get("/billing/payments")
 async def list_payments(user=Depends(authmod.get_current_user)):
-    rows = await db.payment_orders.find({"user_id": user["id"], "status": {"$in": ["paid", "failed"]}},
-                                        {"_id": 0}).sort("created_at", -1).to_list(50)
+    rows = await db.payment_orders.find({"user_id": user["id"], "status": {"$in": ["paid", "failed"]}}, {"_id": 0}).sort("created_at", -1).to_list(50)
     return rows
 
 
 @api.post("/billing/cancel")
 async def cancel_subscription(user=Depends(authmod.get_current_user)):
-    await db.subscriptions.update_one({"user_id": user["id"]},
-                                      {"$set": {"status": "cancelled"}})
+    await db.subscriptions.update_one({"user_id": user["id"]}, {"$set": {"status": "cancelled"}})
     await audit(user["id"], "subscription_cancelled", "")
     return {"ok": True}
 
 
-async def _activate_plan(user_id: str, plan_id: str, provider: str,
-                         order_id: str = None, payment_id: str = None):
+async def _activate_plan(user_id: str, plan_id: str, provider: str, order_id: str = None, payment_id: str = None): #type: ignore
     now = datetime.now(timezone.utc)
     await db.subscriptions.update_one(
         {"user_id": user_id},
