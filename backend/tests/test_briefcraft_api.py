@@ -4,7 +4,7 @@ import uuid
 import pytest
 import requests
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/") #type: ignore
 API = f"{BASE_URL}/api"
 ADMIN_EMAIL = "admin@briefcraft.ai"
 ADMIN_PASSWORD = "Admin@12345"
@@ -148,7 +148,7 @@ def test_contact_note_commitment(user_ctx):
     assert u.status_code == 200 and u.json()["status"] == "done"
     assert s.get(f"{API}/companies").status_code == 200
     up = s.post(f"{API}/notes/upload", files={"file": ("t.txt", b"note body", "text/plain")},
-                headers={"Authorization": f"Bearer {user_ctx['token']}", "Content-Type": None})
+                headers={"Authorization": f"Bearer {user_ctx['token']}", "Content-Type": None}) #type: ignore
     assert up.status_code == 200, up.text
     bad = requests.post(f"{API}/notes/upload", files={"file": ("t.pdf", b"x", "application/pdf")},
                         headers={"Authorization": f"Bearer {user_ctx['token']}"})

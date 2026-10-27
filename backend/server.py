@@ -46,17 +46,17 @@ _bg_tasks = set()
 app = FastAPI(title="PreMeet")
 api = APIRouter(prefix="/api")
 
+GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 
 def current_period() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m")
-
 
 async def audit(user_id: str, action: str, detail: str = ""):
     await db.audit_events.insert_one({
         "id": new_id(), "user_id": user_id, "action": action,
         "detail": detail, "created_at": now_iso(),
     })
-
 
 async def get_usage(user_id: str) -> dict:
     period = current_period()
@@ -67,7 +67,6 @@ async def get_usage(user_id: str) -> dict:
         await db.usage_records.insert_one(dict(rec))
     rec.pop("_id", None)
     return rec
-
 
 async def get_plan_for_user(user_id: str) -> dict:
     sub = await db.subscriptions.find_one({"user_id": user_id})
@@ -81,12 +80,10 @@ async def get_plan_for_user(user_id: str) -> dict:
     sub.pop("_id", None) #type: ignore
     return {"plan": plan, "subscription": sub}
 
-
 def clean(doc: dict) -> dict:
     if doc:
         doc.pop("_id", None)
     return doc
-
 
 # ============ AUTH ============
 @api.post("/auth/register")
@@ -114,10 +111,6 @@ async def register(payload: RegisterInput, request: Request, response: Response)
     await audit(uid, "register", email)
     return {"id": uid, "email": email, "name": payload.name, "role": "user",
             "onboarded": False, "token": access}
-
-
-GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 
 @api.get("/auth/google")
 async def google_login_start():
@@ -721,8 +714,7 @@ async def regenerate_section(brief_id: str, payload: RegenerateSectionInput, use
     notes = await db.notes.find({"user_id": user["id"], "contact_id": meeting.get("contact_id")}).to_list(50) if meeting and meeting.get("contact_id") else []
     commitments = await db.commitments.find({"user_id": user["id"], "contact_id": meeting.get("contact_id")}).to_list(50) if meeting and meeting.get("contact_id") else []
     pref = await db.preferences.find_one({"user_id": user["id"]}) or {}
-    context = brief_service.build_context(clean(meeting), clean(contact) if contact else None, None, # type: ignore
-                                          [clean(n) for n in notes], [clean(c) for c in commitments])
+    context = brief_service.build_context(clean(meeting), clean(contact) if contact else None, None, [clean(n) for n in notes], [clean(c) for c in commitments]) #type: ignore
     try:
         fresh = await brief_service.generate_brief(context, pref.get("tone", "professional"), pref.get("detail_level", "balanced"), b.get("template", "consultant"))
     except Exception:
@@ -772,7 +764,7 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
         integrationPlan = planObject["id"]
         # retreive the subscription plan of the user
         subscriptionPlan = await db.subscriptions.find_one({"user_id": user["id"]})
-        if integrationPlan is subscriptionPlan["plan_id"]: #type: ignore
+        if integrationPlan == subscriptionPlan["plan_id"]: #type: ignore
             if provider in google_service.GOOGLE_PROVIDERS:
                 return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
             if row.get("requires_oauth"):
@@ -786,6 +778,7 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
             # re-route the user to the upgrade-page
             return {"ok": False, "status": "rejected", "provider": "system"}
     else: 
+        print("PlanObject is", planObject)
         raise HTTPException(status_code=500, detail="An error occurred. Please try again later")
 
 @api.post("/integrations/{provider}/disconnect")
@@ -812,6 +805,7 @@ async def usage_endpoint(user=Depends(authmod.get_current_user)):
 # ============ PLANS & BILLING ============
 @api.get("/plans")
 async def get_plans():
+    print("Plans endpoint has been hit")
     plans = await db.plans.find({}, {"_id": 0}).sort("order", 1).to_list(20)
     for p in plans:
         p["price_inr"] = billing.usd_to_inr(p["price_monthly"])

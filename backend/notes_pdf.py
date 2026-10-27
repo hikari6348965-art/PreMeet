@@ -27,8 +27,7 @@ def _styles():
 
 
 def _bullets(items, st):
-    return ListFlowable([ListItem(Paragraph(escape(str(i)), st["body"]), leftIndent=10) for i in items],
-                        bulletType="bullet", start="•", leftIndent=12)
+    return ListFlowable([ListItem(Paragraph(escape(str(i)), st["body"]), leftIndent=10) for i in items], bulletType="bullet", start="•", leftIndent=12) #type: ignore
 
 
 def render_notes_pdf(meeting: dict, notes: dict) -> bytes:

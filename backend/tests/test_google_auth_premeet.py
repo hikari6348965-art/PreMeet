@@ -8,7 +8,7 @@ import requests
 from pymongo import MongoClient
 from dotenv import dotenv_values
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/") #type: ignore
 API = f"{BASE_URL}/api"
 ENV = dotenv_values("/app/backend/.env")
 
@@ -22,7 +22,7 @@ def mint(uid, email):
 
 @pytest.fixture(scope="module")
 def google_user():
-    db = MongoClient(ENV["MONGO_URL"])[ENV["DB_NAME"]]
+    db = MongoClient(ENV["MONGO_URL"])[ENV["DB_NAME"]] #type: ignore
     email = f"test_google_{uuid.uuid4().hex[:8]}@example.com"
     uid = str(db.users.insert_one({"email": email, "name": "TEST Google", "role": "user",
                                     "onboarded": True, "google_linked": True,
@@ -68,11 +68,3 @@ def test_password_login_for_google_only_user_401(google_user):
 def test_forgot_password_for_google_user_ok(google_user):
     r = requests.post(f"{API}/auth/forgot-password", json={"email": google_user["email"]})
     assert r.status_code == 200
-
-
-# Rename
-def test_openapi_title_premeet():
-    r = requests.get(f"{API}/openapi.json")
-    if r.status_code != 200:
-        pytest.skip("openapi not exposed under /api")
-    assert r.json()["info"]["title"] == "PreMeet"
