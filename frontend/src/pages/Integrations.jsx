@@ -69,13 +69,15 @@ export default function Integrations() {
     finally { setBusy(""); }
   };
   const connect = (p) => run(p, async () => {
-    // first check if the user is on the basic plan
-    if ("basic") {
-      return;
-    }
     const { data } = await api.post(`/integrations/${p}/connect`);
-    if (data.authorization_url) { window.location.assign(data.authorization_url); return; }
-    toast.success("Connected"); await load();
+    if (data.status == "rejected") {
+      // reroute to the billing page
+      window?.location.href = "https://www/premeet.ink/app/billlng";
+    }
+    else {
+      if (data.authorization_url) { window.location.assign(data.authorization_url); return; }
+      toast.success("Connected"); await load();
+    }
   });
   const disconnect = (p) => run(p, async () => {
     await api.post(`/integrations/${p}/disconnect`); await load();
@@ -86,7 +88,11 @@ export default function Integrations() {
     toast.success(`Imported ${data.created} new and updated ${data.updated} meetings`); await load();
   });
 
-  if (!rows) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (!rows) return (
+    <div className="flex justify-center py-20">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+    </div>
+  );
 
   const grouped = rows.reduce((acc, r) => { (acc[r.category] = acc[r.category] || []).push(r); return acc; }, {});
   const labels = { calendar: "Calendar", crm: "CRM", notes: "Notes & documents", email: "Email" };
@@ -99,7 +105,10 @@ export default function Integrations() {
           const Icon = icons[cat] || Plug;
           return (
             <div key={cat}>
-              <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground mb-3"><Icon className="h-4 w-4 text-primary" /> {labels[cat]}</h2>
+              <h2 className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-muted-foreground mb-3">
+                <Icon className="h-4 w-4 text-primary" />
+                {labels[cat]}
+              </h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 {grouped[cat].map((r) => (
                   <IntegrationCard key={r.id} r={r} busy={busy === r.provider}
