@@ -8,7 +8,6 @@ import {
   Sparkles, Quote, Check, ChevronDown, Link2, AlertTriangle, Target, Video,
 } from "lucide-react";
 
-
 const features = [
   { icon: Database, title: "Unified Client Memory", desc: "Consolidate notes, emails, past calls and open tasks into one living profile per client." },
   { icon: ShieldCheck, title: "Source-Verified Intelligence", desc: "Every factual claim links to its source. Facts, inferences and missing info are clearly separated." },
@@ -52,7 +51,9 @@ export default function Landing() {
   const [plans, setPlans] = useState([]);
   const { user } = useAuth();
 
-  useEffect(() => { api.get("/plans").then(({ data }) => setPlans(data)).catch(() => {}); }, []);
+  useEffect(() => {
+    api.get("/plans").then(({ data }) => { setPlans(data); console.log("Retreived data: ", data) }).catch(() => { });
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -210,7 +211,7 @@ export default function Landing() {
                 <div key={i} className="flex items-start gap-3 text-sm">
                   {activeTab === "Sources" ? <Link2 className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                     : activeTab === "Commitments" && line.startsWith("⚠") ? <AlertTriangle className="h-4 w-4 text-[#D97706] mt-0.5 shrink-0" />
-                    : <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />}
+                      : <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />}
                   <span className="leading-relaxed text-slate-700">{line.replace("⚠ ", "")}</span>
                 </div>
               ))}
@@ -240,7 +241,7 @@ export default function Landing() {
             <p className="mt-4 text-muted-foreground text-lg">Clear brief allowances. No surprise charges. Upgrade when you need more.</p>
           </div>
           <div className="mt-12 grid md:grid-cols-3 gap-5 max-w-4xl mx-auto">
-            {plans.map((p) => (
+            {plans.length > 0 && plans.map((p) => (
               <div key={p.id} data-testid={`pricing-card-${p.id}`}
                 className={`p-6 rounded-2xl border-2 bg-card flex flex-col ${p.id === "entry" ? "border-ink shadow-[6px_6px_0_0_#0B0F1A]" : "border-border bc-lift"}`}>
                 <div className="flex items-center justify-between min-h-6">
