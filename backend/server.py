@@ -8,7 +8,6 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
 
 from fastapi import FastAPI, APIRouter, Request, Response, HTTPException, Depends, UploadFile, File
-from pydantic import BaseModel
 import httpx
 from starlette.middleware.cors import CORSMiddleware
 from bson import ObjectId
@@ -17,9 +16,9 @@ import secrets as pysecrets
 from database import db, client
 from models import (
     new_id, now_iso, RegisterInput, LoginInput, ForgotPasswordInput, ResetPasswordInput,
-    OnboardingInput, PreferencesInput, ContactInput, CompanyInput, MeetingInput, MeetingUpdate,
+    OnboardingInput, PreferencesInput, ContactInput, MeetingInput, MeetingUpdate,
     NoteInput, CommitmentInput, CommitmentUpdate, GenerateBriefInput, BriefEditInput,
-    RegenerateSectionInput, FeedbackInput, IntegrationConnectInput, SubscribeInput,
+    RegenerateSectionInput, FeedbackInput, SubscribeInput,
     VerifyPaymentInput, PlanUpdateInput,
 )
 import auth as authmod
@@ -159,7 +158,7 @@ async def google_login_callback(
     error: str | None = None,
 ):
     frontend = os.environ.get(
-        "FRONTEND_URL", "https://www.premeet.ink"
+        "FRONTEND_URL", "https://www.premeet.ink" # change to production url later
     ).rstrip("/")
 
     def login_error():
@@ -758,28 +757,22 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
     if not row:
         raise HTTPException(status_code=404, detail="Unknown integration")
     # Honest status: OAuth-based providers are NOT configured yet in this MVP.
-    # check the plan of the integration
-    planObject = await db.plans.find_one({"id": row["id"]})
-    if planObject:
-        integrationPlan = planObject["id"]
-        # retreive the subscription plan of the user
-        subscriptionPlan = await db.subscriptions.find_one({"user_id": user["id"]})
-        if integrationPlan == subscriptionPlan["plan_id"]: #type: ignore
-            if provider in google_service.GOOGLE_PROVIDERS:
-                return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
-            if row.get("requires_oauth"):
-                return {"ok": False, "status": "setup_required", "provider": provider,
-                        "message": f"{row['name']} uses the official OAuth flow. Connect this integration once OAuth credentials are configured. No fabricated data is shown until a real connection is established."}
-            await db.integrations.update_one(
-                {"user_id": user["id"], "provider": provider},
-                {"$set": {"status": "connected", "connected_at": now_iso()}})
-            return {"ok": True, "status": "connected", "provider": provider}
-        else:
-            # re-route the user to the upgrade-page
-            return {"ok": False, "status": "rejected", "provider": "system"}
-    else: 
-        print("PlanObject is", planObject)
-        raise HTTPException(status_code=500, detail="An error occurred. Please try again later")
+    # get the integration limit for that user
+    user_plan = await get_plan_for_user(user["id"])
+    connection_count = await db.integrations.count_documents({"user_id": user["id"]})
+    if user_plan["plan"]["integration_limit"] >= connection_count:
+        if provider in google_service.GOOGLE_PROVIDERS:
+            return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
+        if row.get("requires_oauth"):
+            return {"ok": False, "status": "setup_required", "provider": provider,
+                "message": f"{row['name']} uses the official OAuth flow. Connect this integration once OAuth credentials are configured. No fabricated data is shown until a real connection is established."}
+        await db.integrations.update_one(
+            {"user_id": user["id"], "provider": provider},
+            {"$set": {"status": "connected", "connected_at": now_iso()}})
+        return {"ok": True, "status": "connected", "provider": provider}
+    else:
+        # when the user is going to exceed the limit
+        return {"ok": False, "status": "rejected", "provider": "system"}
 
 @api.post("/integrations/{provider}/disconnect")
 async def disconnect_integration(provider: str, user=Depends(authmod.get_current_user)):
