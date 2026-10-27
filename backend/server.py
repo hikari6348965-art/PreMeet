@@ -767,7 +767,7 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
         raise HTTPException(status_code=404, detail="Unknown integration")
     # Honest status: OAuth-based providers are NOT configured yet in this MVP.
     # check the plan of the integration
-    planObject = await db.plans.find_one({"id": row.id})
+    planObject = await db.plans.find_one({"id": row["id"]})
     if planObject:
         integrationPlan = planObject["id"]
         # retreive the subscription plan of the user
@@ -785,7 +785,8 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
         else:
             # re-route the user to the upgrade-page
             return {"ok": False, "status": "rejected", "provider": "system"}
-
+    else: 
+        raise HTTPException(status_code=500, detail="An error occurred. Please try again later")
 
 @api.post("/integrations/{provider}/disconnect")
 async def disconnect_integration(provider: str, user=Depends(authmod.get_current_user)):
