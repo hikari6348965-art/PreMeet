@@ -47,6 +47,7 @@ api = APIRouter(prefix="/api")
 
 GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+FALLBACK_URL = "https://www.premeet.ink"
 
 def current_period() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m")
@@ -158,7 +159,7 @@ async def google_login_callback(
     error: str | None = None,
 ):
     frontend = os.environ.get(
-        "FRONTEND_URL", "https://www.premeet.ink" # change to production url later
+        "FRONTEND_URL", FALLBACK_URL # change to production url later
     ).rstrip("/")
 
     def login_error():
