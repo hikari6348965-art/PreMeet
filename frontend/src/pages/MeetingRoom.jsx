@@ -15,25 +15,6 @@ export default function MeetingRoom() {
   const [leftAt, setLeftAt] = useState(0);
 
   useEffect(() => { api.get(`/meetings/${id}`).then(({ data }) => setMeeting(data.meeting)).catch(() => toast.error("Meeting not found")); }, [id]);
-  useEffect(() => {
-    if (typeof window != "undefined") {
-      try {
-        if (room == null) { return; }
-        const iframe = document.querySelector("iframe");
-        const doc = iframe.contentDocument;
-        const video_ctn = doc.querySelector(".setup");
-        if (video_ctn) {
-          video_ctn.style.height = "-webkit-fill-available";
-          video_ctn.style.width = "-webkit-fill-available";
-        }
-        console.log(iframe);
-      }
-      catch (err) {
-        console.log("An error occurred while trying to intercept the styling: ", err);
-        return;
-      }
-    }
-  }, [room, starting]);
 
   const start = async () => {
     setStarting(true);
@@ -44,7 +25,11 @@ export default function MeetingRoom() {
 
   const copyInvite = () => { navigator.clipboard.writeText(room.invite_url); toast.success("Invite link copied"); };
 
-  if (!meeting) return <div className="flex justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (!meeting) return (
+    <div className="flex justify-center py-20">
+      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+    </div>
+  )
 
   return (
     <div data-testid="meeting-room-page">
