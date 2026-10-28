@@ -17,7 +17,8 @@ export default function MeetingRoom() {
   useEffect(() => { api.get(`/meetings/${id}`).then(({ data }) => setMeeting(data.meeting)).catch(() => toast.error("Meeting not found")); }, [id]);
   useEffect(() => {
     if (typeof window != "undefined") {
-      try{
+      try {
+        if (room == null) { return; }
         const iframe = document.querySelector("iframe");
         const doc = iframe.contentDocument;
         const video_ctn = doc.querySelector(".setup");
@@ -25,8 +26,9 @@ export default function MeetingRoom() {
           video_ctn.style.height = "-webkit-fill-available";
           video_ctn.style.width = "-webkit-fill-available";
         }
+        console.log(iframe);
       }
-      catch (err){
+      catch (err) {
         console.log("An error occurred while trying to intercept the styling: ", err);
         return;
       }
