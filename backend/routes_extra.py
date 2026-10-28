@@ -22,12 +22,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 _tasks = set()
 
-
 def _bg(coro):
     t = asyncio.create_task(coro)
     _tasks.add(t)
     t.add_done_callback(_tasks.discard)
-
 
 async def _meeting(meeting_id: str, user_id: str) -> dict:
     m = await db.meetings.find_one({"id": meeting_id, "user_id": user_id}, {"_id": 0})
@@ -35,15 +33,12 @@ async def _meeting(meeting_id: str, user_id: str) -> dict:
         raise HTTPException(status_code=404, detail="Meeting not found")
     return m
 
-
 # ============ GOOGLE ============
 @router.post("/integrations/google/start")
 async def google_start(user=Depends(authmod.get_current_user)):
     state = pysecrets.token_urlsafe(32)
-    await db.oauth_states.insert_one({"state": state, "user_id": user["id"], "used": False,
-                                      "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()})
+    await db.oauth_states.insert_one({"state": state, "user_id": user["id"], "used": False, "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()})
     return {"authorization_url": gs.auth_url(state)}
-
 
 @router.get("/integrations/google/callback")
 async def google_callback(code: str = Query(None), state: str = Query(None), error: str = Query(None)):
@@ -60,10 +55,8 @@ async def google_callback(code: str = Query(None), state: str = Query(None), err
     except Exception as e:
         logger.error(f"Google token exchange failed: {e}")
         return RedirectResponse(f"{back}?google=error")
-    await db.audit_events.insert_one({"id": new_id(), "user_id": row["user_id"], "action": "google_connected",
-                                      "detail": "", "created_at": now_iso()})
+    await db.audit_events.insert_one({"id": new_id(), "user_id": row["user_id"], "action": "google_connected", "detail": "", "created_at": now_iso()})
     return RedirectResponse(f"{back}?google=connected")
-
 
 @router.post("/integrations/google/sync")
 async def google_sync(user=Depends(authmod.get_current_user)):
@@ -89,10 +82,8 @@ async def google_sync(user=Depends(authmod.get_current_user)):
                                           "meeting_type": "other", "status": "scheduled", "company": "",
                                           "contact_id": None, "created_at": now_iso(), **fields})
             created += 1
-    await db.integrations.update_one({"user_id": user["id"], "provider": "google_calendar"},
-                                     {"$set": {"last_synced_at": now_iso()}})
+    await db.integrations.update_one({"user_id": user["id"], "provider": "google_calendar"}, {"$set": {"last_synced_at": now_iso()}})
     return {"ok": True, "created": created, "updated": updated, "total": len(events)}
-
 
 # ============ VIDEO ROOM ============
 @router.post("/meetings/{meeting_id}/room")
@@ -110,16 +101,13 @@ async def join_room(meeting_id: str, user=Depends(authmod.get_current_user)):
         room = {"name": created["name"], "url": created["url"], "exp": exp, "recording": can_record,
                 "invite_key": pysecrets.token_urlsafe(16), "created_at": now_iso()}
         await db.meetings.update_one({"id": meeting_id}, {"$set": {"video_room": room}})
-    token = await vs.meeting_token(room["name"], user.get("name") or "Host", True, now + 6 * 3600,
-                                   record=room.get("recording", False))
+    token = await vs.meeting_token(room["name"], user.get("name") or "Host", True, now + 6 * 3600, record=room.get("recording", False))
     invite = f"{os.environ['FRONTEND_URL']}/join/{meeting_id}?k={room['invite_key']}"
     return {"url": room["url"], "token": token, "invite_url": invite, "recording": room.get("recording", False)}
-
 
 class GuestJoin(BaseModel):
     k: str
     name: str
-
 
 @router.post("/public/rooms/{meeting_id}/join")
 async def guest_join(meeting_id: str, payload: GuestJoin):
@@ -129,8 +117,11 @@ async def guest_join(meeting_id: str, payload: GuestJoin):
         raise HTTPException(status_code=404, detail="This invite link is invalid or has expired.")
     now = int(datetime.now(timezone.utc).timestamp())
     token = await vs.meeting_token(room["name"], payload.name.strip()[:60] or "Guest", False, now + 4 * 3600)
-    return {"url": room["url"], "token": token, "title": m.get("title")}
-
+    return {
+        "url": room["url"], 
+        "token": token, 
+        "title": m.get("title") #type: ignore
+    }
 
 # ============ MEETING NOTES ============
 async def _notes(meeting_id: str, user_id: str) -> dict:
@@ -143,16 +134,13 @@ async def _notes(meeting_id: str, user_id: str) -> dict:
     return n or {"meeting_id": meeting_id, "user_id": user_id, "status": "none", "ai": None,
                  "manual": "", "transcript": ""}
 
-
 @router.get("/meetings/{meeting_id}/notes")
 async def get_notes(meeting_id: str, user=Depends(authmod.get_current_user)):
     await _meeting(meeting_id, user["id"])
     return await _notes(meeting_id, user["id"])
 
-
 class ManualNotes(BaseModel):
     manual: str
-
 
 @router.put("/meetings/{meeting_id}/notes")
 async def save_manual_notes(meeting_id: str, payload: ManualNotes, user=Depends(authmod.get_current_user)):
@@ -163,12 +151,10 @@ async def save_manual_notes(meeting_id: str, payload: ManualNotes, user=Depends(
          "$setOnInsert": {"status": "none", "ai": None, "transcript": ""}}, upsert=True)
     return await _notes(meeting_id, user["id"])
 
-
 async def _set_status(meeting_id, user_id, **fields):
     await db.meeting_notes.update_one({"meeting_id": meeting_id, "user_id": user_id},
                                       {"$set": {**fields, "updated_at": now_iso()},
                                        "$setOnInsert": {"manual": ""}}, upsert=True)
-
 
 async def _finish(meeting: dict, user_id: str, transcript: str, recording_ids=None):
     mid = meeting["id"]
@@ -192,7 +178,6 @@ async def _finish(meeting: dict, user_id: str, transcript: str, recording_ids=No
             "status": "open", "source": f"Call: {meeting.get('title')}", "meeting_id": mid,
             "created_at": now_iso()})
 
-
 async def _process(meeting: dict, user_id: str):
     mid = meeting["id"]
     room = meeting["video_room"]["name"]
@@ -215,7 +200,6 @@ async def _process(meeting: dict, user_id: str):
         logger.exception(f"Processing recording failed for {mid}: {e}")
         await _set_status(mid, user_id, status="failed", error="Something went wrong while processing the recording. Please retry.")
 
-
 async def _process_upload(meeting: dict, user_id: str, storage_path: str):
     tmp = tempfile.mkdtemp()
     try:
@@ -229,10 +213,8 @@ async def _process_upload(meeting: dict, user_id: str, storage_path: str):
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
-
 MAX_AUDIO = 300 * 1024 * 1024
 AUDIO_EXT = {"mp3", "m4a", "wav", "webm", "mp4", "mpeg", "mpga", "ogg", "mov"}
-
 
 @router.post("/meetings/{meeting_id}/notes/upload")
 async def upload_recording(meeting_id: str, file: UploadFile = File(...), user=Depends(authmod.get_current_user)):
@@ -262,7 +244,6 @@ async def upload_recording(meeting_id: str, file: UploadFile = File(...), user=D
     _bg(_process_upload(m, user["id"], res["path"]))
     return await _notes(meeting_id, user["id"])
 
-
 @router.post("/meetings/{meeting_id}/notes/process")
 async def process_recording(meeting_id: str, user=Depends(authmod.get_current_user)):
     m = await _meeting(meeting_id, user["id"])
@@ -276,7 +257,6 @@ async def process_recording(meeting_id: str, user=Depends(authmod.get_current_us
     await _set_status(meeting_id, user["id"], status="waiting", error=None)
     _bg(_process(m, user["id"]))
     return await _notes(meeting_id, user["id"])
-
 
 @router.get("/meetings/{meeting_id}/notes/pdf")
 async def notes_pdf(meeting_id: str, user=Depends(authmod.get_current_user)):

@@ -9,10 +9,10 @@ import requests
 from dotenv import dotenv_values
 from pymongo import MongoClient
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/")
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL").rstrip("/") #type: ignore
 API = f"{BASE_URL}/api"
 ENV = dotenv_values("/app/backend/.env")
-db = MongoClient(ENV["MONGO_URL"])[ENV["DB_NAME"]]
+db = MongoClient(ENV["MONGO_URL"])[ENV["DB_NAME"]] #type: ignore
 AUDIO = "/tmp/test_meeting.mp3"
 
 

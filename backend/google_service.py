@@ -22,18 +22,14 @@ SCOPES = [
 ]
 GOOGLE_PROVIDERS = ("google_calendar", "gmail")
 
-
 class GoogleNotConnected(Exception):
     pass
-
 
 def _fernet() -> Fernet:
     return Fernet(base64.urlsafe_b64encode(hashlib.sha256(os.environ["JWT_SECRET"].encode()).digest()))
 
-
 def redirect_uri() -> str:
-    return f"{os.environ['FRONTEND_URL']}/api/integrations/google/callback"
-
+    return f"{os.environ['BACKEND_URL']}/api/integrations/google/callback"
 
 def auth_url(state: str) -> str:
     return AUTH_URL + "?" + urlencode({
@@ -41,7 +37,6 @@ def auth_url(state: str) -> str:
         "response_type": "code", "scope": " ".join(SCOPES), "access_type": "offline",
         "include_granted_scopes": "true", "prompt": "consent", "state": state,
     })
-
 
 async def exchange_code(code: str) -> dict:
     async with httpx.AsyncClient(timeout=20) as c:
@@ -52,7 +47,6 @@ async def exchange_code(code: str) -> dict:
         })
     r.raise_for_status()
     return r.json()
-
 
 async def save_connection(user_id: str, tokens: dict):
     update = {"user_id": user_id, "scopes": tokens.get("scope", ""), "updated_at": now_iso(), "revoked": False}
@@ -70,7 +64,6 @@ async def save_connection(user_id: str, tokens: dict):
         await db.integrations.update_one({"user_id": user_id, "provider": provider},
                                          {"$set": {"status": status, "connected_at": now_iso(),
                                                    "account": update.get("google_email"), "error": None}})
-
 
 async def access_token(user_id: str) -> str:
     conn = await db.google_connections.find_one({"user_id": user_id, "revoked": False})
@@ -90,7 +83,6 @@ async def access_token(user_id: str) -> str:
         raise GoogleNotConnected()
     return r.json()["access_token"]
 
-
 async def disconnect(user_id: str):
     conn = await db.google_connections.find_one({"user_id": user_id})
     if conn and conn.get("refresh_token"):
@@ -104,7 +96,6 @@ async def disconnect(user_id: str):
     await db.integrations.update_many({"user_id": user_id, "provider": {"$in": list(GOOGLE_PROVIDERS)}},
                                       {"$set": {"status": "not_connected", "connected_at": None, "account": None}})
 
-
 async def upcoming_events(user_id: str, days: int = 30) -> list[dict]:
     token = await access_token(user_id)
     now = datetime.now(timezone.utc)
@@ -115,7 +106,6 @@ async def upcoming_events(user_id: str, days: int = 30) -> list[dict]:
                         params=params, headers={"Authorization": f"Bearer {token}"})
     r.raise_for_status()
     return [e for e in r.json().get("items", []) if e.get("status") != "cancelled"]
-
 
 async def gmail_threads(user_id: str, emails: list[str], limit: int = 5) -> list[dict]:
     emails = [e for e in emails if e and "@" in e][:5]
