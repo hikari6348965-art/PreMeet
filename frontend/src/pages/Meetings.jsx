@@ -137,5 +137,10 @@ export default function Meetings() {
 }
 
 function Field({ label, children }) {
-  return <div><label className="text-sm font-medium">{label}</label>{children}</div>;
+  return (
+    <div>
+      <label className="text-sm font-medium">{label}</label>
+      {children}
+    </div>
+  )
 }

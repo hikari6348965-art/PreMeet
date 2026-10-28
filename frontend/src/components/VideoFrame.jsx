@@ -20,8 +20,14 @@ export function VideoFrame({ url, token, onLeft, onJoined }) {
     // React StrictMode mounts effects twice and destroy() is async, so allow a transient second instance
     const frame = DailyIframe.createFrame(host.current, {
       allowMultipleCallInstances: true,
-      showLeaveButton: true, showFullscreenButton: true,
-      iframeStyle: { width: "100%", height: "100%", border: "0", borderRadius: "12px" },
+      showLeaveButton: true, 
+      showFullscreenButton: true,
+      iframeStyle: {
+        width: "100%",
+        height: "100%",
+        border: "0",
+        borderRadius: "12px"
+      }
     });
     let active = true;
     let failed = false;
@@ -46,13 +52,14 @@ export function VideoFrame({ url, token, onLeft, onJoined }) {
       <div ref={host} className={`absolute inset-0 ${error ? "invisible" : ""}`} />
       {joining && !error && (
         <div className="absolute inset-0 flex flex-col items-center justify-center text-white/70 gap-3 pointer-events-none">
-          <Loader2 className="h-6 w-6 animate-spin" /> 
+          <Loader2 className="h-6 w-6 animate-spin" />
           <span className="text-sm">Opening the room…</span>
         </div>
       )}
       {error && (
         <div className="absolute inset-0 bg-ink flex flex-col items-center justify-center text-white gap-3 p-6 text-center" data-testid="video-error">
-          <Video className="h-7 w-7 text-signal" /> <p className="text-sm max-w-sm">{error}</p>
+          <Video className="h-7 w-7 text-signal" /> 
+          <p className="text-sm max-w-sm">{error}</p>
         </div>
       )}
     </div>

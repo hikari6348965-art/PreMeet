@@ -15,6 +15,23 @@ export default function MeetingRoom() {
   const [leftAt, setLeftAt] = useState(0);
 
   useEffect(() => { api.get(`/meetings/${id}`).then(({ data }) => setMeeting(data.meeting)).catch(() => toast.error("Meeting not found")); }, [id]);
+  useEffect(() => {
+    if (typeof window != "undefined") {
+      try{
+        const iframe = document.querySelector("iframe");
+        const doc = iframe.contentDocument;
+        const video_ctn = doc.querySelector(".setup");
+        if (video_ctn) {
+          video_ctn.style.height = "-webkit-fill-available";
+          video_ctn.style.width = "-webkit-fill-available";
+        }
+      }
+      catch (err){
+        console.log("An error occurred while trying to intercept the styling: ", err);
+        return;
+      }
+    }
+  }, [room, starting]);
 
   const start = async () => {
     setStarting(true);
