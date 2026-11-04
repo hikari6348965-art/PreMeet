@@ -29,14 +29,13 @@ import email_service
 import google_service
 import routes_extra
 import asyncio
-
+import requests
 
 from urllib.parse import urlencode
 from starlette.responses import RedirectResponse
 from starlette.concurrency import run_in_threadpool
 from google.oauth2 import id_token
 from google.auth.transport.requests import Request as GoogleRequest
-
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -743,7 +742,6 @@ async def delete_brief(brief_id: str, user=Depends(authmod.get_current_user)):
     await db.briefs.delete_one({"id": brief_id, "user_id": user["id"]})
     return {"ok": True}
 
-
 # ============ INTEGRATIONS ============
 @api.get("/integrations")
 async def list_integrations(user=Depends(authmod.get_current_user)):
@@ -751,7 +749,111 @@ async def list_integrations(user=Depends(authmod.get_current_user)):
     rows = await db.integrations.find({"user_id": user["id"]}).to_list(50)
     return [clean(r) for r in rows]
 
+@api.get("/integrations/custom/{provider}/callback")
+async def initiate(provider: str, request: Request):
+    # If the integration is hubspot
+    if provider == "hubspot":
+        # Get the auth code
+        auth_code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        if not auth_code or not state:
+            raise HTTPException(status_code=404, detail="Query Parameteres Missing")
+        else:
+            # identify the user
+            isExixstingUser = await db.oauth_states.find_one({"state": state})
+            if isExixstingUser:
+                # Exchange the auth code for tokens
+                token_url = "https://api.hubapi.com/oauth/2026-03/token"
+                payload = {
+                    "grant_type": "authorization_code",
+                    "client_id": os.getenv("HUBSPOT_CLIENT_ID"),
+                    "client_secret": os.getenv("HUBSPOT_CLIENT_SECERET"),
+                    "redirect_uri": os.getenv("HUBSPOT_REDIRECT_URL"),
+                    "code": auth_code
+                }
+                headers = { "Content-Type": "application/x-www-form-urlencoded" }
+                response = requests.post(token_url, data=payload, headers=headers)
+                if response.status_code == 200:
+                    token_data = response.json()
+                    access_token = token_data.get("access_token")
+                    refresh_token = token_data.get("refresh_token")
+                    
+                    # store the tokens in the database
+                    await db.integrations.update_one(
+                        {"user_id": isExixstingUser["user_id"], "provider": "hubspot"},
+                        {
+                            "$set": {
+                                "accessToken": access_token,
+                                "refreshToken": refresh_token,
+                                "status": "connected",
+                                "connected_at": now_iso()
+                            }
+                        }
+                    )
 
+                    # Get the contacts
+                    LIMIT = 100
+                    hubspot_endpoint = f"https://api.hubapi.com/crm/objects/2026-09/contacts?limit={LIMIT}"
+                    headers = {"Authorization": f"Bearer {access_token}"}
+                    params = {
+                        "limit": 100,
+                        "properties": [
+                            "firstname",
+                            "lastname",
+                            "email",
+                            "phone",
+                            "company",
+                            "jobtitle"
+                        ],
+                        "associations": "companies"
+                    }
+                    endpoint_response = requests.get(hubspot_endpoint, headers=headers, params=params)
+                    if endpoint_response.status_code == 200:
+                        # Add the contacts to the database
+                        for contact in endpoint_response.json().get("results", []):
+                            properties = contact.get("properties", {})
+                            # create contacts and save
+                            document = {
+                                "name": f"{properties.get("firstname")} {properties.get("lastname")}",
+                                "email": properties.get("email"),
+                                "title": properties.get("jobtitle"),
+                                "company": properties.get("company"),
+                                "phone": properties.get("phone"),
+                                "id": new_id(),
+                                "user_id": isExixstingUser["user_id"]
+                            }
+                            await db.contacts.insert_one(document)
+                        # Find the user
+                        user = await db.users.find_one({"_id": ObjectId(isExixstingUser["user_id"])})
+                        # Switch on the HubSpot integration of that respective user to connected
+                        await db.integrations.update_one(
+                            {"user_id": isExixstingUser["user_id"], "provider": "hubspot"},
+                            {
+                                "$set": {
+                                    "account": user["email"], #type: ignore
+                                    "status": "connected",
+                                    "connected_at": now_iso()
+                                }
+                            }
+                        )
+                        # Update the status of the state document
+                        await db.oauth_states.update_one(
+                            {"state": state, "user_id": user["_id"]}, #type: ignore
+                            {
+                                "$set": {
+                                    "used": True
+                                }
+                            }
+                        )
+                        # Redirect to the frontend
+                        url = "http://www.premeet.ink/app/integrations"
+                        return RedirectResponse(f"{url}?hubspot=connected")
+                else:
+                    url = "https://www.premeet.ink"
+                    return RedirectResponse(url, status_code=401)
+            else:
+                raise HTTPException(status_code=404, detail="User Not Found")
+        
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
     row = await db.integrations.find_one({"user_id": user["id"], "provider": provider})
@@ -764,9 +866,25 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
     if user_plan["plan"]["integration_limit"] >= connection_count:
         if provider in google_service.GOOGLE_PROVIDERS:
             return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
+        # Integrations that require OAuth will redirect the user to the provider's auth page
         if row.get("requires_oauth"):
-            return {"ok": False, "status": "setup_required", "provider": provider,
-                "message": f"{row['name']} uses the official OAuth flow. Connect this integration once OAuth credentials are configured. No fabricated data is shown until a real connection is established."}
+            if row.get("name") == "HubSpot":
+                # Create a tmporary state value to recognise the user in the callbacks
+                state = pysecrets.token_urlsafe(32)
+                await db.oauth_states.insert_one(
+                    {
+                        "state": state,
+                        "user_id": user["id"]
+                    }
+                )
+                params = {
+                    "client_id": os.getenv("HUBSPOT_CLIENT_ID"),
+                    "redirect_uri": os.getenv("HUBSPOT_REDIRECT_URL"),
+                    "scope": "crm.objects.contacts.write oauth crm.objects.contacts.read",
+                    "state": state
+                }
+                authorization_url = ("https://app-na2.hubspot.com/oauth/authorize?" + urlencode(params))
+                return {"ok": True, "status": "redirect", "provider": provider, "authorization_url": authorization_url}
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
             {"$set": {"status": "connected", "connected_at": now_iso()}})

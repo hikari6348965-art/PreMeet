@@ -42,21 +42,21 @@ async def google_start(user=Depends(authmod.get_current_user)):
 
 @router.get("/integrations/google/callback")
 async def google_callback(code: str = Query(None), state: str = Query(None), error: str = Query(None)):
-    back = f"{os.environ['FRONTEND_URL']}/app/integrations"
+    frontend = f"{os.environ['FRONTEND_URL']}/app/integrations"
     if error or not code or not state:
-        return RedirectResponse(f"{back}?google=denied")
+        return RedirectResponse(f"{frontend}?google=denied")
     row = await db.oauth_states.find_one_and_update(
         {"state": state, "used": False, "expires_at": {"$gt": now_iso()}}, {"$set": {"used": True}})
     if not row:
-        return RedirectResponse(f"{back}?google=expired")
+        return RedirectResponse(f"{frontend}?google=expired")
     try:
         tokens = await gs.exchange_code(code)
         await gs.save_connection(row["user_id"], tokens)
     except Exception as e:
         logger.error(f"Google token exchange failed: {e}")
-        return RedirectResponse(f"{back}?google=error")
+        return RedirectResponse(f"{frontend}?google=error")
     await db.audit_events.insert_one({"id": new_id(), "user_id": row["user_id"], "action": "google_connected", "detail": "", "created_at": now_iso()})
-    return RedirectResponse(f"{back}?google=connected")
+    return RedirectResponse(f"{frontend}?google=connected")
 
 @router.post("/integrations/google/sync")
 async def google_sync(user=Depends(authmod.get_current_user)):

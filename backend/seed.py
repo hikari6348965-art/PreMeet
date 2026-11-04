@@ -32,8 +32,8 @@ INTEGRATION_CATALOG = [
     {"provider": "google_calendar", "name": "Google Calendar", "category": "calendar", "requires_oauth": True},
     {"provider": "manual_notes", "name": "Manual Notes & Uploads", "category": "notes", "requires_oauth": False},
     {"provider": "gmail", "name": "Gmail", "category": "email", "requires_oauth": True},
+    {"provider": "hubspot", "name": "HubSpot", "category": "Contacts", "requires_oauth": True},
 ]
-
 
 async def ensure_plans():
     for plan in DEFAULT_PLANS:
@@ -97,9 +97,7 @@ async def ensure_preferences(user_id: str, profession: str = "consultant"):
             "updated_at": now_iso(),
         })
 
-
-UNAVAILABLE_PROVIDERS = ["outlook_calendar", "hubspot", "salesforce"]
-
+UNAVAILABLE_PROVIDERS = ["outlook_calendar", "salesforce"]
 
 async def purge_demo_and_unavailable():
     """Idempotent cleanup: remove sample data and integrations that aren't set up."""
