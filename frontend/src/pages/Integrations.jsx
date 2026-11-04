@@ -76,8 +76,12 @@ export default function Integrations() {
       return;
     }
     else {
-      if (data.authorization_url) { window.location.assign(data.authorization_url); return; }
-      toast.success("Connected"); await load();
+      if (data.authorization_url) {
+        window.location.assign(data.authorization_url);
+        return;
+      }
+      toast.success("Connected"); 
+      await load();
     }
   });
   const disconnect = (p) => run(p, async () => {
@@ -95,14 +99,23 @@ export default function Integrations() {
     </div>
   );
 
-  const grouped = rows.reduce((acc, r) => { (acc[r.category] = acc[r.category] || []).push(r); return acc; }, {});
-  const labels = { calendar: "Calendar", crm: "CRM", notes: "Notes & documents", email: "Email" };
+  const grouped = rows.reduce((acc, r) => {
+    (acc[r.category] = acc[r.category] || []).push(r);
+    return acc;
+  }, {});
+  const labels = {
+    calendar: "Calendar",
+    crm: "CRM",
+    notes: "Notes & documents",
+    email: "Email",
+    Contacts: "Contacts"
+  };
 
   return (
     <div data-testid="integrations-page" style={{ padding: "25px" }}>
       <PageHeader title="Integrations" subtitle="Connect your tools with read-only access. One Google sign-in covers Calendar and Gmail." />
       <div className="space-y-8">
-        {["calendar", "email", "notes", "crm"].filter((c) => grouped[c]).map((cat) => {
+        {["calendar", "email", "notes", "Contacts", "crm"].filter((c) => grouped[c]).map((cat) => {
           const Icon = icons[cat] || Plug;
           return (
             <div key={cat}>
