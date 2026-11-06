@@ -30,6 +30,7 @@ import google_service
 import routes_extra
 import asyncio
 import requests
+import json
 
 from urllib.parse import urlencode
 from starlette.responses import RedirectResponse
@@ -777,19 +778,6 @@ async def initiate(provider: str, request: Request):
                     token_data = response.json()
                     access_token = token_data.get("access_token")
                     refresh_token = token_data.get("refresh_token")
-                    
-                    # store the tokens in the database
-                    await db.integrations.update_one(
-                        {"user_id": isExixstingUser["user_id"], "provider": "hubspot"},
-                        {
-                            "$set": {
-                                "accessToken": access_token,
-                                "refreshToken": refresh_token,
-                                "status": "connected",
-                                "connected_at": now_iso()
-                            }
-                        }
-                    )
 
                     # Get the contacts
                     LIMIT = 100
@@ -832,7 +820,9 @@ async def initiate(provider: str, request: Request):
                                 "$set": {
                                     "account": user["email"], #type: ignore
                                     "status": "connected",
-                                    "connected_at": now_iso()
+                                    "connected_at": now_iso(),
+                                    "refresh_token": refresh_token,
+                                    "access_token": access_token
                                 }
                             }
                         )
@@ -853,13 +843,150 @@ async def initiate(provider: str, request: Request):
                     return RedirectResponse(url, status_code=401)
             else:
                 raise HTTPException(status_code=404, detail="User Not Found")
+    elif provider == "zoho":
+        # Get the auth code and state
+        auth_code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        if not auth_code or not state:
+            return HTTPException(status_code=404, detail="Query Parameteres Missing")
+        else:
+            retreivedStateCollection = await db.oauth_states.find_one({"state": state})
+            if retreivedStateCollection:
+                data = {
+                    "code": auth_code,
+                    "client_id": os.getenv("ZOHO_CLIENT_ID"),
+                    "client_secret": os.getenv("ZOHO_CLIENT_SECERET"),
+                    "redirect_uri": os.getenv("ZOHO_REDIRECT_URI"),
+                    "grant_type": "authorization_code"
+                }
+                headers = {
+                    "Content-Type": "application/x-www-form-urlencoded"
+                }
+                response = requests.post("https://accounts.zoho.in/oauth/v2/token", data=data, headers=headers)
+                retreivedData = response.json()
+                # Extract the tokens
+                refreshToken = retreivedData["refresh_token"]
+                accessToken = retreivedData["access_token"]
+
+                # Update the status of the state document
+                user = await db.users.find_one({"_id": ObjectId(retreivedStateCollection["user_id"])})
+                await db.oauth_states.update_one(
+                    {"state": state, "user_id": user["_id"]}, #type: ignore
+                    {
+                        "$set": {
+                            "used": True
+                        }
+                    }
+                )
+                # Fetch the userID within Zoho
+                ZohoUserID_Response = requests.get("GET https://www.zohoapis.in/crm/v8/users?type=CurrentUser", headers={
+                    "Authorization": f"Zoho-oauthtoken {accessToken}"
+                })
+                if ZohoUserID_Response.status_code == 200:
+                    data = ZohoUserID_Response.json()
+                    userData = data["users"][0]
+
+                    user_id = userData["id"]
+                    user_email = userData["email"]
+
+                    await db.integrations.update_one(
+                        {"user_id": retreivedStateCollection["user_id"], "provider": "zoho"},
+                        {
+                            "$set": {
+                                "status": "connected",
+                                "account": user_email, #type: ignore
+                                "connected_at": now_iso(),
+                                "access_token": accessToken,
+                                "refresh_token": refreshToken,
+                                "zoho_userID": user_id
+                            }
+                        }
+                    )
+
+                    # Fetch the meetings data
+                    url = "https://www.zohoapis.in/crm/v8/__calendar_activities"
+                    now = datetime.now(timezone.utc)
+                    filters = {
+                        "comparator": "equal",
+                        "field": { "api_name": "Start_DateTime" },
+                        "value": now.strftime("%Y-%m-%dT00:00:00+00:00")
+                    }
+                    params = {
+                        "module": "Events",
+                        "view_type": "month",
+                        "filters": json.dumps(filters),
+                        "user_ids": user_id,
+                        "include": "$formatted_values",
+                        "per_page": 200
+                    }
+                    calendarResponse = requests.get(url=url, params=params, headers={"Authorization": f"Zoho-oauthtoken {accessToken}"})
+                    if calendarResponse.status_code == 200:
+                        calendarData = calendarResponse.json()
+                        for meeting in calendarData.get("__calendar_activities", []):
+                            start = meeting.get("Start_DateTime")
+                            if not start:
+                                continue
+                            start_time = datetime.fromisoformat(start.replace("Z", "+00:00"))
+                            if start_time >= now:
+                                meeting_title = meeting.get("Event_Title")
+                                meeting_start_time = meeting.get("Start_DateTime")
+                                participants = meeting.get("Participants")
+
+                                participant_name_array = []
+                                # Fetch Participant details
+                                for participant in participants:
+                                    info_url = f"https://www.zohoapis.in/crm/v8/Contacts/{participant.get("id")}"
+                                    participant_response = requests.get(url=info_url, headers={"Authorization": f"Zoho-oauthtoken {accessToken}"})
+                                    if participant_response.status_code == 200:
+                                        # Contact creation and appendation
+                                        participantData = participant_response.json()
+                                        email = participantData["data"][0]["Email"]
+                                        existingContact = await db.contacts.find_one({"user_id": retreivedStateCollection["user_id"], "email": email})
+                                        if existingContact:
+                                            continue
+                                        else:
+                                            # Create a new contact
+                                            name = f"{participantData["data"][0]["First_Name"]} {participantData["data"][0]["Last_Name"]}"
+                                            notes = participantData["Description"]
+                                            phone = participantData["data"][0]["Phone"]
+                                            title = participantData["data"][0]["Title"]
+
+                                            await db.contacts.insert_one({
+                                                "name": name,
+                                                "email": email,
+                                                "title": title,
+                                                "phone": phone,
+                                                "notes": notes,
+                                                "user_id": retreivedStateCollection["user_id"]
+                                            })
+                                            participant_name_array.append(name)
+                                    else:
+                                        continue
+                                # Create the Meeting
+                                await db.meetings.insert_one({
+                                    "title": meeting_title,
+                                    "meeting_type": "Meeting",
+                                    "user_id": retreivedStateCollection["user_id"],
+                                    "source": "Auto",
+                                    "start_time": meeting_start_time,
+                                    "attendees": participant_name_array,
+                                    "status": "upcoming"
+                                })
+                        # Redirect to Frontend
+                            url = "http://www.premeet.ink/app/integrations"
+                            return RedirectResponse(f"{url}?zoho=connected")
+                    else:
+                        return HTTPException(status_code=500, detail="An error occurred")
+                else:
+                    return HTTPException(status_code=500, detail="An error occurred")
+            else:
+                return HTTPException(status_code=404, detail="State Collection Not Found In Database")
         
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
     row = await db.integrations.find_one({"user_id": user["id"], "provider": provider})
     if not row:
         raise HTTPException(status_code=404, detail="Unknown integration")
-    # Honest status: OAuth-based providers are NOT configured yet in this MVP.
     # get the integration limit for that user
     user_plan = await get_plan_for_user(user["id"])
     connection_count = await db.integrations.count_documents({"user_id": user["id"]})
@@ -885,6 +1012,38 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 }
                 authorization_url = ("https://app-na2.hubspot.com/oauth/authorize?" + urlencode(params))
                 return {"ok": True, "status": "redirect", "provider": provider, "authorization_url": authorization_url}
+            elif row.get("name") == "Zoho Calendar":
+                zoho_clientID = os.getenv("ZOHO_CLIENT_ID")
+                zoho_redirect_uri = os.getenv("ZOHO_REDIRECT_URI")
+
+                # create the state variable and save it
+                state = pysecrets.token_urlsafe(32)
+                existing_state = await db.oauth_states.find_one({"user_id": user["id"]})
+                if existing_state:
+                    # simply update the field
+                    await db.oauth_states.update_one(
+                        {"user_id": user["id"]},
+                        {
+                            "$set": {
+                                "state": state
+                            }
+                        }
+                    )
+                else:
+                    # create and save the state
+                    await db.oauth_states.insert_one({
+                        "user_id": user["id"], 
+                        "state": state
+                    })
+                params = {
+                    "client_id": zoho_clientID,
+                    "scope": "ZohoCalendar.calendar.READ,ZohoCalendar.calendar.ALL",
+                    "redirect_uri": zoho_redirect_uri,
+                    "access_type": "offline",
+                    "state": state
+                }
+                zoho_auth_url = (f"https://accounts.zoho.com/oauth/v2/auth?response_type=code&" + urlencode(params))
+                return {"ok": True, "status": "redirect", "provider": provider, "authorization_url": zoho_auth_url}
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
             {"$set": {"status": "connected", "connected_at": now_iso()}})

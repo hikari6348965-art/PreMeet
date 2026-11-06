@@ -31,6 +31,7 @@ DEFAULT_PLANS = [
 INTEGRATION_CATALOG = [
     {"provider": "google_calendar", "name": "Google Calendar", "category": "calendar", "requires_oauth": True},
     {"provider": "manual_notes", "name": "Manual Notes & Uploads", "category": "notes", "requires_oauth": False},
+    {"provider": "zoho", "name": "Zoho Calendar", "category": "calendar", "requires_oauth": True},
     {"provider": "gmail", "name": "Gmail", "category": "email", "requires_oauth": True},
     {"provider": "hubspot", "name": "HubSpot", "category": "Contacts", "requires_oauth": True},
 ]
@@ -40,7 +41,6 @@ async def ensure_plans():
         existing = await db.plans.find_one({"id": plan["id"]})
         if not existing:
             await db.plans.insert_one(dict(plan))
-
 
 async def ensure_user_subscription(user_id: str):
     sub = await db.subscriptions.find_one({"user_id": user_id})
