@@ -60,7 +60,11 @@ export default function Integrations() {
   const shown = useRef("");
   useEffect(() => {
     const g = params.get("google");
-    if (g && RESULT[g] && shown.current !== g) { shown.current = g; toast[RESULT[g][0]](RESULT[g][1]); setParams({}, { replace: true }); }
+    if (g && RESULT[g] && shown.current !== g) {
+      shown.current = g;
+      toast[RESULT[g][0]](RESULT[g][1]);
+      setParams({}, { replace: true });
+    }
   }, [params, setParams]);
 
   const run = async (provider, fn) => {
@@ -80,7 +84,7 @@ export default function Integrations() {
         window.location.assign(data.authorization_url);
         return;
       }
-      toast.success("Connected"); 
+      toast.success("Connected");
       await load();
     }
   });
@@ -103,6 +107,7 @@ export default function Integrations() {
     (acc[r.category] = acc[r.category] || []).push(r);
     return acc;
   }, {});
+
   const labels = {
     calendar: "Calendar",
     crm: "CRM",
