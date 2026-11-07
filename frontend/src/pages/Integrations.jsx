@@ -58,6 +58,7 @@ export default function Integrations() {
   const load = () => api.get("/integrations").then(({ data }) => setRows(data));
   useEffect(() => { load().catch(() => toast.error("Couldn't load integrations")); }, []);
   const shown = useRef("");
+  
   useEffect(() => {
     const g = params.get("google");
     if (g && RESULT[g] && shown.current !== g) {
@@ -69,9 +70,17 @@ export default function Integrations() {
 
   const run = async (provider, fn) => {
     setBusy(provider);
-    try { await fn(); } catch (e) { toast.error(formatApiErrorDetail(e.response?.data?.detail)); }
-    finally { setBusy(""); }
+    try {
+      await fn();
+    }
+    catch (e) {
+      toast.error(formatApiErrorDetail(e.response?.data?.detail));
+    }
+    finally {
+      setBusy("");
+    }
   };
+
   const connect = (p) => run(p, async () => {
     const { data } = await api.post(`/integrations/${p}/connect`);
     if (data.status == "rejected") {
@@ -84,14 +93,17 @@ export default function Integrations() {
         window.location.assign(data.authorization_url);
         return;
       }
+      // When the authorization url is empty
       toast.success("Connected");
       await load();
     }
   });
+
   const disconnect = (p) => run(p, async () => {
     await api.post(`/integrations/${p}/disconnect`); await load();
     toast.success(GOOGLE.includes(p) ? "Google disconnected (Calendar and Gmail)" : "Disconnected");
   });
+
   const sync = () => run("google_calendar", async () => {
     const { data } = await api.post("/integrations/google/sync");
     toast.success(`Imported ${data.created} new and updated ${data.updated} meetings`); await load();
