@@ -1,6 +1,6 @@
 import os
 import logging
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -864,6 +864,7 @@ async def initiate(provider: str, request: Request):
                 }
                 response = requests.post("https://accounts.zoho.in/oauth/v2/token", data=data, headers=headers)
                 retreivedData = response.json()
+
                 # Extract the tokens
                 refreshToken = retreivedData["refresh_token"]
                 accessToken = retreivedData["access_token"]
@@ -879,7 +880,7 @@ async def initiate(provider: str, request: Request):
                     }
                 )
                 # Fetch the userID within Zoho
-                ZohoUserID_Response = requests.get("GET https://www.zohoapis.in/crm/v8/users?type=CurrentUser", headers={
+                ZohoUserID_Response = requests.get("https://www.zohoapis.in/crm/v8/users?type=CurrentUser", headers={
                     "Authorization": f"Zoho-oauthtoken {accessToken}"
                 })
                 if ZohoUserID_Response.status_code == 200:
@@ -904,83 +905,94 @@ async def initiate(provider: str, request: Request):
                     )
 
                     # Fetch the meetings data
-                    url = "https://www.zohoapis.in/crm/v8/__calendar_activities"
-                    now = datetime.now(timezone.utc)
-                    filters = {
-                        "comparator": "equal",
-                        "field": { "api_name": "Start_DateTime" },
-                        "value": now.strftime("%Y-%m-%dT00:00:00+00:00")
-                    }
-                    params = {
-                        "module": "Events",
-                        "view_type": "month",
-                        "filters": json.dumps(filters),
-                        "user_ids": user_id,
-                        "include": "$formatted_values",
-                        "per_page": 200
-                    }
-                    calendarResponse = requests.get(url=url, params=params, headers={"Authorization": f"Zoho-oauthtoken {accessToken}"})
-                    if calendarResponse.status_code == 200:
-                        calendarData = calendarResponse.json()
-                        for meeting in calendarData.get("__calendar_activities", []):
-                            start = meeting.get("Start_DateTime")
-                            if not start:
-                                continue
-                            start_time = datetime.fromisoformat(start.replace("Z", "+00:00"))
-                            if start_time >= now:
-                                meeting_title = meeting.get("Event_Title")
-                                meeting_start_time = meeting.get("Start_DateTime")
-                                participants = meeting.get("Participants")
+                    # Fetch all the calendars for that user
+                    calenders_url = "https://calendar.zoho.in/api/v1/calendars?category=own"
+                    calendarsResponse = requests.get(url=calenders_url, headers={"Authorization": f"Zoho-oauthtoken {accessToken}"})
+                    if calendarsResponse.status_code == 200:
+                        print("Calendars fetched successfully")
+                        calendars = calendarsResponse.json()
+                        for calendar in calendars.get("calendars", []):
+                            calendar_id = calendar.get("uid")
+                            # Fetch the events for that calendar
+                            today = date.today()
+                            end_date = today + timedelta(days=31)
 
-                                participant_name_array = []
-                                # Fetch Participant details
-                                for participant in participants:
-                                    info_url = f"https://www.zohoapis.in/crm/v8/Contacts/{participant.get("id")}"
-                                    participant_response = requests.get(url=info_url, headers={"Authorization": f"Zoho-oauthtoken {accessToken}"})
-                                    if participant_response.status_code == 200:
-                                        # Contact creation and appendation
-                                        participantData = participant_response.json()
-                                        email = participantData["data"][0]["Email"]
-                                        existingContact = await db.contacts.find_one({"user_id": retreivedStateCollection["user_id"], "email": email})
-                                        if existingContact:
-                                            continue
-                                        else:
-                                            # Create a new contact
-                                            name = f"{participantData["data"][0]["First_Name"]} {participantData["data"][0]["Last_Name"]}"
-                                            notes = participantData["Description"]
-                                            phone = participantData["data"][0]["Phone"]
-                                            title = participantData["data"][0]["Title"]
+                            range_data = {
+                                "start": today.strftime("%Y%m%d"),
+                                "end": end_date.strftime("%Y%m%d")
+                            }
+                            events_url = f"https://calendar.zoho.in/api/v1/calendars/{calendar_id}/events?range={range_data}"
+                            eventsResponse = requests.get(url=events_url, headers={"Authorization": f"Zoho-oauthtoken {accessToken}"})
+                            if eventsResponse.status_code == 200:
+                                eventsData = eventsResponse.json()
+                                for event in eventsData.get("events", []):
+                                    start_time = event.get("start")
+                                    if not start_time:
+                                        continue
+                                    start_time_obj = datetime.fromisoformat(start_time.replace("Z", "+00:00"))
+                                    if start_time_obj >= datetime.now(timezone.utc):
+                                        meeting_title = event.get("title")
+                                        meeting_start_time = event.get("start")
+                                        participants = event.get("attendees", [])
 
-                                            await db.contacts.insert_one({
-                                                "name": name,
-                                                "email": email,
-                                                "title": title,
-                                                "phone": phone,
-                                                "notes": notes,
-                                                "user_id": retreivedStateCollection["user_id"]
-                                            })
-                                            participant_name_array.append(name)
+                                        participant_name_array = []
+                                        # Fetch Participant details
+                                        for participant in participants:
+                                            info_url = f"https://www.zohoapis.in/crm/v8/Contacts/{participant.get("id")}"
+                                            participant_response = requests.get(url=info_url, headers={"Authorization": f"Zoho-oauthtoken {accessToken}"})
+                                            if participant_response.status_code == 200:
+                                                # Contact creation and appendation
+                                                participantData = participant_response.json()
+                                                email = participantData["data"][0]["Email"]
+                                                existingContact = await db.contacts.find_one({"user_id": retreivedStateCollection["user_id"], "email": email})
+                                                if existingContact:
+                                                    continue
+                                                else:
+                                                    # Create a new contact
+                                                    name = f"{participantData["data"][0]["First_Name"]} {participantData["data"][0]["Last_Name"]}"
+                                                    notes = participantData["Description"]
+                                                    phone = participantData["data"][0]["Phone"]
+                                                    title = participantData["data"][0]["Title"]
+
+                                                    await db.contacts.insert_one({
+                                                        "name": name,
+                                                        "email": email,
+                                                        "title": title,
+                                                        "phone": phone,
+                                                        "notes": notes,
+                                                        "user_id": retreivedStateCollection["user_id"]
+                                                    })
+                                                    participant_name_array.append(name)
+                                            else:
+                                                continue
+                                        # Create the Meeting
+                                        await db.meetings.insert_one({
+                                            "title": meeting_title,
+                                            "meeting_type": "Meeting",
+                                            "user_id": retreivedStateCollection["user_id"],
+                                            "source": "Auto",
+                                            "start_time": meeting_start_time,
+                                            "attendees": participant_name_array,
+                                            "status": "upcoming"
+                                        })
+                                        # Redirect to the frontend
+                                        return RedirectResponse(f"{os.getenv("FRONTEND_URL")}" + "/app/integrations?zoho=connected")
                                     else:
                                         continue
-                                # Create the Meeting
-                                await db.meetings.insert_one({
-                                    "title": meeting_title,
-                                    "meeting_type": "Meeting",
-                                    "user_id": retreivedStateCollection["user_id"],
-                                    "source": "Auto",
-                                    "start_time": meeting_start_time,
-                                    "attendees": participant_name_array,
-                                    "status": "upcoming"
-                                })
-                        # Redirect to Frontend
-                            url = "http://www.premeet.ink/app/integrations"
-                            return RedirectResponse(f"{url}?zoho=connected")
+                            else:
+                                print(f"Failed to fetch events for calendar {calendar_id}: {eventsResponse.status_code}")
+                                return HTTPException(status_code=500, detail="An error occurred while fetching events")
                     else:
+                        print(f"Failed to fetch calendars: {calendarsResponse.status_code}")
+                        print(f"Response: {calendarsResponse.text}")
                         return HTTPException(status_code=500, detail="An error occurred")
                 else:
-                    return HTTPException(status_code=500, detail="An error occurred")
+                    print(f"Failed to fetch Zoho user data: {ZohoUserID_Response.status_code}")
+                    print(f"Response: {ZohoUserID_Response.text}")
+                    return HTTPException(status_code=500, detail="An error occurred while fetching user data")
             else:
-                return HTTPException(status_code=404, detail="State Collection Not Found In Database")
+                # Redirect the user to the auth page
+                return RedirectResponse("https://www.premeet.ink/login")
         
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
@@ -1035,14 +1047,23 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                         "user_id": user["id"], 
                         "state": state
                     })
+                zoho_scopes = [
+                    "ZohoCRM.users.READ",
+                    "ZohoCRM.modules.contacts.READ",
+                    "ZohoCRM.modules.events.READ",
+                    "ZohoCRM.modules.events.ALL",  # Added/corrected for proper calendar event access
+                    "ZohoCalendar.calendar.READ",
+                    "ZohoCalendar.event.READ"
+                ]
                 params = {
                     "client_id": zoho_clientID,
-                    "scope": "ZohoCalendar.calendar.READ,ZohoCalendar.calendar.ALL",
                     "redirect_uri": zoho_redirect_uri,
                     "access_type": "offline",
-                    "state": state
+                    "state": state,
+                    "prompt": "consent",
+                    "scope": ",".join(zoho_scopes)
                 }
-                zoho_auth_url = (f"https://accounts.zoho.com/oauth/v2/auth?response_type=code&" + urlencode(params))
+                zoho_auth_url = (f"https://accounts.zoho.in/oauth/v2/auth?response_type=code&" + urlencode(params))
                 return {"ok": True, "status": "redirect", "provider": provider, "authorization_url": zoho_auth_url}
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
