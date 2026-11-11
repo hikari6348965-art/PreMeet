@@ -1,0 +1,20 @@
+{
+  "name": "video-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ejs": "^7.0.2",
+    "express": "^5.3.0",
+    "nodemon": "^3.1.14",
+    "socket.io": "^4.8.4",
+    "uuid": "^14.0.3"
+  }
+}

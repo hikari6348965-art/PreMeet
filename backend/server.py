@@ -3,6 +3,7 @@ import logging
 from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+from stripe import client_id
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -30,7 +31,7 @@ import google_service
 import routes_extra
 import asyncio
 import requests
-import json
+import base64
 
 from urllib.parse import urlencode
 from starlette.responses import RedirectResponse
@@ -993,6 +994,163 @@ async def initiate(provider: str, request: Request):
             else:
                 # Redirect the user to the auth page
                 return RedirectResponse("https://www.premeet.ink/login")
+    elif provider == "calendly":
+        # get the state and code
+        state = request.query_params.get("state")
+        code = request.query_params.get("code")
+
+        if not state or not code:
+            raise HTTPException(status_code=404, detail="Query Parameters Missing")
+        else:
+            # check if the the sate and the user exists
+            state_doc = await db.oauth_states.find_one({"state": state})
+            if state_doc:
+                # get the user of the corresponding state
+                user = await db.users.find_one({"_id": ObjectId(state_doc["user_id"])})
+                if user:
+                    calendly_clientID = os.getenv("CALENDLY_CLIENT_ID")
+                    calendly_clientSeceret = os.getenv("CALENDLY_CLIENT_SECERET")
+                    # exchange the code for tokens
+                    url = "https://auth.calendly.com/oauth/token"
+                    credentials = base64.b64encode(f"{calendly_clientID}:{calendly_clientSeceret}".encode()).decode()
+                    headers = {
+                        "Authorization": f"Basic {credentials}",
+                        "Content-Type": "application/x-www-form-urlencoded"
+                    }
+                    data={
+                        "grant_type": "authorization_code",
+                        "client_id": calendly_clientID,
+                        "code": code,
+                        "redirect_uri": os.getenv("CALENDLY_REDIRECT_URI"),
+                    }
+                    calendlyResponse = requests.post(url, headers=headers, data=data)
+                    if calendlyResponse.status_code == 200:
+                        response = calendlyResponse.json()
+                        print("Successfully exchanged code for tokens")
+                        print(f"Response: {response}")
+
+                        accessToken = response["access_token"]
+                        refreshToken = response["refresh_token"]
+
+                        # Get the calendar events from the origin fetch
+                        url = "https://api.calendly.com/scheduled_events"
+                        headers = {"Authorization": f"Bearer {accessToken}"}
+                        params = {
+                            "status": "active",
+                            "min_start_time": datetime.now(timezone.utc).isoformat(),
+                            "sort": "start_time:asc",
+                            "count": 100
+                        }
+                        calendarResponse = requests.get(url=url, headers=headers, params=params)
+                        if calendarResponse.status_code == 200:
+                            responseData = calendarResponse.json()
+                            for eventMember in responseData["collection"]["event_memberships"]:
+                                # Get the data
+                                email = eventMember["user_email"]
+                                userName = eventMember["user_name"]
+
+                                # check if the contact exists
+                                is_existing_contact = await db.contacts.find_one({"email": email, "user_id": user["id"]})
+                                if is_existing_contact:
+                                    continue
+                                else:
+                                    # Create the contact
+                                    await db.contacts.insert_one({
+                                        "name": userName,
+                                        "email": email,
+                                        "user_id": user["id"]
+                                    })
+                            if responseData["collection"]["name"] != "cancelled":
+                                # Create the Meeting
+                                filtered_invitees_array = []
+                                for obj in responseData["collection"]["event_guests"]:
+                                    obj_email = obj["email"]
+                                    extracted_name = obj_email[:obj_email.index("@")]
+                                    filtered_invitees_array.append(extracted_name)
+                                result = await db.meetings.insert_one({
+                                    "title": responseData["collection"]["name"],
+                                    "status": responseData["collection"]["status"],
+                                    "user_id": user["id"],
+                                    "meeting_type": "Meeting",
+                                    "attendees": filtered_invitees_array,
+                                    "source": "Auto",
+                                    "start_time": responseData["collection"]["start_time"]
+                                })
+                                # Create the note for the newly created meeting above
+                                await db.meeting_notes.insert_one({
+                                    "user_id": user["id"],
+                                    "meeting_id": result.inserted_id,
+                                    "manual": responseData["collection"]["meeting_notes_plain"],
+                                    "status": "ready"
+                                })
+                            # Start the loop
+                            while responseData["pagination"]["next_page"] != None:
+                                dataURL = responseData["pagination"]["next_page"]
+                                dataResponse = requests.get(url=dataURL, params=params, headers=headers)
+                                if dataResponse.status_code == 200:
+                                    data = dataResponse.json()
+                                    for eventLoopMember in responseData["collection"]["event_memberships"]:
+                                        # Get the data
+                                        email = eventLoopMember["user_email"]
+                                        userName = eventLoopMember["user_name"]
+
+                                        # check if the contact exists
+                                        is_existing_contact = await db.contacts.find_one({"email": email, "user_id": user["id"]})
+                                        if is_existing_contact:
+                                            continue
+                                        else:
+                                            # Create the contact
+                                            await db.contacts.insert_one({
+                                                "name": userName,
+                                                "email": email,
+                                                "user_id": user["id"]
+                                            })
+                                        if data["collection"]["name"] != "cancelled":
+                                            # Create the Meeting
+                                            filtered_invitees_array = []
+                                            for obj in data["collection"]["event_guests"]:
+                                                obj_email = obj["email"]
+                                                extracted_name = obj_email[:obj_email.index("@")]
+                                                filtered_invitees_array.append(extracted_name)
+                                            resultData = await db.meetings.insert_one({
+                                                "title": data["collection"]["name"],
+                                                "status": data["collection"]["status"],
+                                                "user_id": user["id"],
+                                                "meeting_type": "Meeting",
+                                                "attendees": filtered_invitees_array,
+                                                "source": "Auto",
+                                                "start_time": data["collection"]["start_time"]
+                                            })
+                                            # Create the note for the newly created meeting above
+                                            await db.meeting_notes.insert_one({
+                                                "user_id": user["id"],
+                                                "meeting_id": resultData.inserted_id,
+                                                "manual": data["collection"]["meeting_notes_plain"],
+                                                "status": "ready"
+                                            })
+                                else:
+                                    continue
+                            # update the integration status
+                            await db.integrations.update_one(
+                                {"user_id": user["id"], "provider": "calendly"},
+                                {
+                                    "$set": {
+                                        "status": "connected"
+                                     }
+                                }
+                            )
+                            # Redirect back to the frontend
+                            RedirectResponse(f"{os.getenv("FRONTEND_URL")}/app/integrations?calendly=connected")
+                        else:
+                            return HTTPException(status_code=500, detail="An error occurred. Please try again later.")
+                    else:
+                        print(f"Failed to exchange code for tokens: {calendlyResponse.status_code}")
+                        print(f"Response: {calendlyResponse.text}")
+                        return HTTPException(status_code=500, detail="An error occurred while exchanging code for tokens")
+                else:
+                    return RedirectResponse("https://www.premeet.ink/login")
+            else:
+                raise HTTPException(status_code=404, detail="State not found")
         
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
@@ -1065,6 +1223,33 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 }
                 zoho_auth_url = (f"https://accounts.zoho.in/oauth/v2/auth?response_type=code&" + urlencode(params))
                 return {"ok": True, "status": "redirect", "provider": provider, "authorization_url": zoho_auth_url}
+            elif row.get("name") == "Calendly":
+                # Calendly integration connection
+                calendly_clientID = os.getenv("CALENDLY_CLIENT_ID")
+                calendly_resirectURI = os.getenv("CALENDLY_REDIRECT_URI")
+
+                # generate the state and do something similar to Zoho and HubSpot
+                state = pysecrets.token_urlsafe(32)
+                existing_state = await db.oauth_states.find_one({"user_id": user["id"]})
+                if existing_state:
+                    # simply update the field
+                    await db.oauth_states.update_one(
+                        {"user_id": user["id"]},
+                        {
+                            "$set": {
+                                "state": state
+                            }
+                        }
+                    )
+                else:
+                    # create and save the state
+                    await db.oauth_states.insert_one({
+                        "user_id": user["id"],
+                        "state": state
+                    })
+                # generate the final authetication url
+                auth_url = f"https://auth.calendly.com/oauth/authorize?client_id={calendly_clientID}&response_type=code&redirect_uri={calendly_resirectURI}&state={state}"
+                return {"ok": True, "status": "redirect", "provider": "calendly", "authorization_url": auth_url}
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
             {"$set": {"status": "connected", "connected_at": now_iso()}})
