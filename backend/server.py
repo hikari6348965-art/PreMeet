@@ -1135,8 +1135,10 @@ async def initiate(provider: str, request: Request):
                                 {"user_id": user["id"], "provider": "calendly"},
                                 {
                                     "$set": {
-                                        "status": "connected"
-                                     }
+                                        "status": "connected",
+                                        "refresh_token": refreshToken,
+                                        "connected_at": now_iso()
+                                    }
                                 }
                             )
                             # Redirect back to the frontend
@@ -1151,7 +1153,103 @@ async def initiate(provider: str, request: Request):
                     return RedirectResponse("https://www.premeet.ink/login")
             else:
                 raise HTTPException(status_code=404, detail="State not found")
-        
+    elif provider == "pipedrive":
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        if not code or not state:
+            return HTTPException(status_code=404, detail="Code or Status not found in Query Parameteres")
+        else:
+            # get the user
+            state_document = await db.oauth_states.find_one({"state": state})
+            if state_document:
+                user = await db.users.find_one({"_id": state_document["user_id"]})
+                if user:
+                    PIPEDRIVE_CLIENT_ID = os.getenv("PIPEDRIVE_CLIENT_ID")
+                    PIPEDRIVE_CLIENT_SECERET = os.getenv("PIPEDRIVE_CLIENT_SECERET")
+                    token_url_pipedrive = "https://oauth.pipedrive.com/oauth/token"
+                    data = {
+                        "grant_type": "authorization_code",
+                        "code": code,
+                        "redirect_uri": os.getenv("PIPEDRIVE_REDIRECT_URI")
+                    }
+                    response = requests.post(token_url_pipedrive, auth=(PIPEDRIVE_CLIENT_ID, PIPEDRIVE_CLIENT_SECERET), data=data) #type: ignore
+                    if response.status_code == 200:
+                        responseData = response.json()
+                        accessToken = responseData["access_token"]
+                        refreshToken = responseData["refresh_token"]
+                        # fetch the contacts
+                        contact_url : str = "https://api.pipedrive.com/api/v2/persons"
+                        contactResponse = requests.get(url=contact_url, headers={"Authorization": f"Bearer {accessToken}"}, params={"limit": 500})
+                        if contactResponse.status_code == 200:
+                            contact_data = contactResponse.json()
+                            contacts = contact_data["data"]
+                            contacts_array = []
+                            for contact in contacts:
+                                data = {
+                                    "name": contact["name"],
+                                    "email": next((email.get("value") for email in contact["email"] if email.get("primary") == True ), None),
+                                    "phone": next((phone.get("value") for phone in contact["phone"] if phone.get("primary") == True), None),
+                                    "post_title": contact["job_title"],
+                                    "org_name": contact["org_name"]
+                                }
+                                contacts_array.append(data)
+                            while contact_data["additional_data"]["next_cursor"] != None:
+                                # Fetch more data
+                                loopContactRequest = requests.get("https://api.pipedrive.com/api/v2/persons", headers={"Authorization": f"Bearer {accessToken}"}, params={
+                                    "limit": 500,
+                                    "cursor": contact_data["additional_data"]["next_cursor"]
+                                })
+                                if loopContactRequest.status_code == 200:
+                                    loopContactResponse = loopContactRequest.json()
+                                    contactsLoop = loopContactResponse["data"]
+                                    for contact in contactsLoop:
+                                        data = {
+                                            "name": contact["name"],
+                                            "email": next((email.get("value") for email in contact["email"] if email.get("primary") == True ), None),
+                                            "phone": next((phone.get("value") for phone in contact["phone"] if phone.get("primary") == True), None),
+                                            "post_title": contact["job_title"],
+                                            "org_name": contact["org_name"]
+                                        }
+                                        contacts_array.append(data)
+                                else:
+                                    continue
+                            # Finally create the contacts
+                            for contact in contacts_array:
+                                email = contact["email"]
+                                existingContact = await db.contacts.find_one({"user_id": user["id"], "email": email})
+                                if existingContact:
+                                    continue
+                                else:
+                                    # simply create it
+                                    await db.contacts.insert_one({
+                                        "name": contact["name"],
+                                        "email": contact["email"],
+                                        "company": contact["org_name"],
+                                        "phone": contact["phone"],
+                                        "user_id": user["id"],
+                                        "title": contact["post_title"]
+                                    })
+                            # Update the integration status
+                            await db.integrations.update_one(
+                                {"user_id": user["id"], "provider": "pipedrive"},
+                                {
+                                    "$set": {
+                                        "status": "connected",
+                                        "refresh_token": refreshToken,
+                                        "connected_at": now_iso()
+                                    }
+                                }
+                            )
+                            # Redirect back
+                            return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/app/integrations?pipedrive=connected")
+                        else:
+                            return HTTPException(status_code=500, detail="An unexpected error occurred")
+                    else:
+                        return HTTPException(status_code=500, detail="An error occurred. Please try again later")
+                else:
+                    return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")    
+            else:
+                return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
     row = await db.integrations.find_one({"user_id": user["id"], "provider": provider})
@@ -1250,6 +1348,37 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 # generate the final authetication url
                 auth_url = f"https://auth.calendly.com/oauth/authorize?client_id={calendly_clientID}&response_type=code&redirect_uri={calendly_resirectURI}&state={state}"
                 return {"ok": True, "status": "redirect", "provider": "calendly", "authorization_url": auth_url}
+            elif row.get("name") == "Pipedrive":
+                clientID = os.getenv("PIPEDRIVE_CLIENT_ID")
+                clientSeceret = os.getenv("PIPEDRIVE_CLIENT_SECERET")
+
+                url = "https://oauth.pipedrive.com/oauth/authorize"
+                state = pysecrets.token_urlsafe(32)
+                existing_state = await db.oauth_states.find_one({"user_id": user["id"]})
+                if existing_state:
+                    # simply update the value
+                    await db.oauth_states.update_one(
+                        {"user_id": user[:id]},
+                        {
+                            "$set": {
+                                "state": state
+                            }
+                        }
+                    )
+                else:
+                    await db.oauth_states.insert_one({
+                        "user_id": user["id"],
+                        "state": state
+                    })
+                params = {
+                    "client_id": clientID,
+                    "redirect_uri": clientSeceret,
+                    "state": state
+                }
+                auth_url = f"{url}?{urlencode(params)}"
+                return {"ok": True, "status": "redirect", "provider": "pipedrive", "authorization_url": auth_url}
+            elif row.get("name") == "Salesforce":
+                pass
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
             {"$set": {"status": "connected", "connected_at": now_iso()}})
