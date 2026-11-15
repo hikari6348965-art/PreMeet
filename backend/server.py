@@ -1250,6 +1250,102 @@ async def initiate(provider: str, request: Request):
                     return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")    
             else:
                 return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")
+    elif provider == "salesforce":
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+        if not state or not code:
+            return HTTPException(status_code=404, detail="Query Parameteres Not Found")
+        else:
+            # continue
+            state_doc = await db.oauth_states.find_one({"state": state})
+            if state_doc:
+                user = await db.users.find_one({"id": ObjectId(state_doc["user_id"])})
+                clientID = os.getenv("SALESFORCE_CLIENT_ID")
+                clientSeceret = os.getenv("SALESFORCE_CLIENT_SECERET")
+                redirectURI = os.getenv("SALESFORCE_REDIRECT_URI")
+
+                token_url = "https://login.salesforce.com/services/oauth2/token"
+                data = {
+                    "grant_type": "authorization_code",
+                    "code": code,
+                    "client_id": clientID,
+                    "client_secret": clientSeceret,
+                    "redirect_uri": redirectURI
+                }
+                response = requests.post(token_url, data=data)
+                if response.status_code == 200:
+                    responseData = response.json()
+                    # Extract the information
+                    accessToken = responseData["access_token"]
+                    refreshToken = responseData["refresh_token"]
+                    instance_url = responseData["instance_url"]
+
+                    QUERY = "SELECT Id, FirstName, LastName, Email, Phone, Title, AccountId FROM Contact"
+                    contact_response = requests.get(url=f"{instance_url}/services/data/vXX.X/query", headers={"Authorization": f"Bearer {accessToken}"}, params={"q": QUERY})
+                    if contact_response.status_code == 200:
+                        contactData = contact_response.json()
+                        contacts_array = []
+                        # Extract the contacts from the first fetch
+                        for contact in contactData["records"]:
+                            data = {
+                                "name": f"{contact["FirstName"]} {contact["LastName"]}",
+                                "email": contact["Email"],
+                                "phone": contact["Phone"],
+                                "title": contact["Title"]
+                            }
+                            contacts_array.append(data)
+                        # Begin the loop
+                        next_endpoint = contactData["nextRecordsUrl"]
+                        next_url = (instance_url + next_endpoint)
+                        while next_endpoint != None:
+                            loop_response = requests.get(url=next_url, headers={"Authorization": f"Bearer {accessToken}"})
+                            if loop_response.status_code == 200:
+                                loop_responseData = loop_response.json()
+                                for contact in loop_responseData["records"]:
+                                    data = {
+                                        "name": f"{contact["FirstName"]} {contact["LastName"]}",
+                                        "email": contact["Email"],
+                                        "phone": contact["Phone"],
+                                        "title": contact["Title"]
+                                    }
+                                    contacts_array.append(data)
+                                next_endpoint = loop_responseData["nextRecordsUrl"]
+                                next_url = (instance_url + next_endpoint)
+                            else:
+                                continue
+                        # Add the contacts
+                        for obj in contacts_array:
+                            existing_contact = await db.contacts.find_one({"email": obj["email"], "user_id": user["id"]}) #type: ignore
+                            if existing_contact:
+                                continue
+                            else:
+                                # create a new contact
+                                await db.contacts.insert_one({
+                                    "name": obj["name"],
+                                    "user_id": user["id"], #type: ignore
+                                    "title": obj["title"],
+                                    "phone": obj["phone"]
+                                })
+                        # Update Integration status
+                        await db.integrations.update_one(
+                            {"user_id": user["id"], "provider": "salesforce"}, #type: ignore
+                            {
+                                "$set": {
+                                    "status": "connected",
+                                    "refresh_token": refreshToken,
+                                    "instance_url": instance_url,
+                                    "connected_at": now_iso()
+                                }
+                            }
+                        )
+                        # Redirect
+                        return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/app/integrations?salesforce=connected")
+                    else:
+                        return HTTPException(status_code=500, detail="An error occurred while retreiving the contacts.")
+                else:
+                    return HTTPException(status_code=500, detail="An error occurred.")
+            else:
+                return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
     row = await db.integrations.find_one({"user_id": user["id"], "provider": provider})
@@ -1378,7 +1474,40 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 auth_url = f"{url}?{urlencode(params)}"
                 return {"ok": True, "status": "redirect", "provider": "pipedrive", "authorization_url": auth_url}
             elif row.get("name") == "Salesforce":
-                pass
+                url = "https://login.salesforce.com/services/oauth2/authorize?"
+                clientID = os.getenv("SALESFORCE_CLIENT_ID")
+                redirectURI = os.getenv("SALESFORCE_CLIENT_SECERET")
+                state = ""
+                existingState = await db.oauth_states.find_one({"user_id": user["id"]})
+                if existingState:
+                    # simply update it
+                    generatedState = pysecrets.token_urlsafe(32)
+                    await db.oauth_states.update_one(
+                        {"user_id": user["id"]},
+                        {
+                            "$set": {
+                                "state": generatedState
+                            }
+                        }
+                    )
+                    state = generatedState
+                else:
+                    # insert it
+                    generatedState = pysecrets.token_urlsafe(32)
+                    await db.oauth_states.insert_one({
+                        "user_id": user["id"],
+                        "state": generatedState
+                    })
+                    state = generatedState
+                params = {
+                    "response_type": "code",
+                    "client_id": clientID,
+                    "redirect_uri": redirectURI,
+                    "scope": "api refresh_token offline_access",
+                    "state": state
+                }
+                final_url = (url + urlencode(params))
+                return {"ok": True, "status": "redirect", "provider": "salesforce", "authorization_url": final_url}
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
             {"$set": {"status": "connected", "connected_at": now_iso()}})
