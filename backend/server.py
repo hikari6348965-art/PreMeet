@@ -1346,6 +1346,167 @@ async def initiate(provider: str, request: Request):
                     return HTTPException(status_code=500, detail="An error occurred.")
             else:
                 return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")
+    elif provider == "savyycall":
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+
+        if not code or not state:
+            return HTTPException(status_code=404, detail="Query Parameteres Not Found")
+        else:
+            state_doc = await db.oauth_states.find_one({"state": state})
+            if state_doc:
+                user = await db.users.find_one({"id": ObjectId(state_doc["user_id"])})
+                if user:
+                    # get the tokens
+                    url = "https://savvycal.com/oauth/token"
+                    clientID = os.getenv("SAVYY_CALL_CLIENTI")
+                    clientSeceret = os.getenv("SAVYY_CALL_CLIENT_SECERET")
+                    redirectURL = os.getenv("SAVYY_CALL_REDIRECT_URI")
+                    data = {
+                        "grant_type": "authorization_code",
+                        "code": code,
+                        "client_id": clientID,
+                        "client_secret": clientSeceret,
+                        "redirect_uri": redirectURL
+                    }
+                    headers = {"Accept": "application/json"}
+                    response = requests.get(url=url, data=data, headers=headers)
+                    if response.status_code == 200:
+                        responseData = response.json()
+                        accessToken = responseData["access_token"]
+                        refreshToken = responseData["refresh_token"]
+
+                        events_url = "https://api.savvycal.com/v1/events"
+                        events_headers={
+                            "Authorization": f"Bearer {accessToken}",
+                            "Accept": "application/json"
+                        }
+                        eventsResponse = requests.get(url=events_url, headers=events_headers)
+                        if eventsResponse.status_code == 200:
+                            eventResponseData = eventsResponse.json()
+                            meeting_summary = eventResponseData["entries"]["summary"]
+                            meeting_desc = eventResponseData["entries"]["description"]
+                            starting_at = eventResponseData["entries"]["start_at"]
+                            meeting_title = eventResponseData["entries"]["link"]["name"]
+
+                            final_names_array = []
+                            for attendee in eventResponseData["attendees"]:
+                                email = attendee["email"]
+                                name = attendee["display_name"]
+                                phone = attendee["phone_number"]
+
+                                if attendee["is_organizer"] == True or (attendee["response_status"] != "accepted" or attendee["response_status"] != "needs_action"):
+                                    # Create the contact
+                                    existing_contact = await db.contacts.find_one({"user_id": user["id"], "email": email})
+                                    if existing_contact:
+                                        continue
+                                    else:
+                                        # Create a new contact
+                                        await db.contacts.insert_one({
+                                            "name": name,
+                                            "email": email,
+                                            "phone": phone,
+                                            "user_id": user["id"]
+                                        })
+                                    final_names_array.append(name)
+                                else:
+                                    continue
+                            # Create the meeting
+                            result = await db.meetings.insert_one({
+                                "title": meeting_title,
+                                "start_time": starting_at,
+                                "meeting_type": "Meeting",
+                                "user_id": user["id"],
+                                "objective": meeting_summary,
+                                "attendees": final_names_array
+                            })
+                            # Create the meeting note
+                            await db.meeting_notes.insert_one({
+                                "user_id": user["id"],
+                                "meeting_id": result.inserted_id,
+                                "manual": meeting_desc
+                            })
+                            next_destination_url = eventResponseData["metadata"]["after"]
+                            limit = eventResponseData["metadata"]["limit"]
+                            while next_destination_url != "" or next_destination_url != None:
+                                params = {
+                                    "limit": limit,
+                                    "period": "upcoming",
+                                    "state": "all"
+                                }
+                                loopResponse = requests.get(url=events_url, headers=events_headers, params=params)
+                                if loopResponse.status_code == 200:
+                                    loopResponseData = loopResponse.json()
+
+                                    loop_meeting_summary = loopResponseData["entries"]["summary"]
+                                    loop_meeting_desc =loopResponseData["entries"]["description"]
+                                    loop_starting_at = loopResponseData["entries"]["start_at"]
+                                    loop_meeting_title = loopResponseData["entries"]["link"]["name"]
+
+                                    final_loop_names_array = []
+                                    for attendee in loopResponseData["attendees"]:
+                                        email = attendee["email"]
+                                        name = attendee["display_name"]
+                                        phone = attendee["phone_number"]
+
+                                        if attendee["is_organizer"] == True or (attendee["response_status"] != "accepted" or attendee["response_status"] != "needs_action"):
+                                            # Create the contact
+                                            existing_contact = await db.contacts.find_one({"user_id": user["id"], "email": email})
+                                            if existing_contact:
+                                                continue
+                                            else:
+                                                # Create a new contact
+                                                await db.contacts.insert_one({
+                                                    "name": name,
+                                                    "email": email,
+                                                    "phone": phone,
+                                                    "user_id": user["id"]
+                                                })
+                                            final_loop_names_array.append(name)
+                                        else:
+                                            continue
+                                    # Create the meeting
+                                    result_loop = await db.meetings.insert_one({
+                                        "title": loop_meeting_title,
+                                        "start_time": loop_starting_at,
+                                        "meeting_type": "Meeting",
+                                        "user_id": user["id"],
+                                        "objective": loop_meeting_summary,
+                                        "attendees": final_loop_names_array
+                                    })
+                                    # Create the meeting note
+                                    await db.meeting_notes.insert_one({
+                                        "user_id": user["id"],
+                                        "meeting_id": result_loop.inserted_id,
+                                        "manual": loop_meeting_desc
+                                    })
+                                    # Update the loop fields
+                                    next_destination_url = loopResponseData["metadata"]["after"]
+                                    limit = loopResponseData["metadata"]["limit"]
+                                else:
+                                    return HTTPException(status_code=500, detail="An error occurred while fetching data from pagination block")
+                            # Update the integration status
+                            await db.integrations.update_one(
+                                {"user_id": user["id"], "provider": "savyycall"},
+                                {
+                                    "$set": {
+                                        "refresh_token": refreshToken,
+                                        "status": "connected",
+                                        "connected_at": now_iso()
+                                    }
+                                }
+                            )
+                            # Redirect
+                            return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/app/integrations?savyysales=connected")
+                        else:
+                            return HTTPException(status_code=500, detail="An error occurred while trying to retreive the events.")
+                    else:
+                        return HTTPException(status_code=500, detail="An error occurred.")
+                else:
+                    return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")
+            else:
+                return HTTPException(status_code=404, detail="State Document Not Found")
+                
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
     row = await db.integrations.find_one({"user_id": user["id"], "provider": provider})
@@ -1508,6 +1669,41 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 }
                 final_url = (url + urlencode(params))
                 return {"ok": True, "status": "redirect", "provider": "salesforce", "authorization_url": final_url}
+            elif row.get("name") == "Savyy Call":
+                clientID = os.getenv("SAVYY_CALL_CLIENTID")
+                clientSeceret = os.getenv("SAVYY_CALL_CLIENT_SECERET")
+                redirectURI = os.getenv("SAVYY_CALL_REDIRECT_URI")
+                state = ""
+                existingState = await db.oauth_states.find_one({"user_id": user["id"]})
+                if existingState:
+                    # simply update it
+                    generatedState = pysecrets.token_urlsafe(32)
+                    await db.oauth_states.update_one(
+                        {"user_id": user["id"]},
+                        {
+                            "$set": {
+                                "state": generatedState
+                            }
+                        }
+                    )
+                    state = generatedState
+                else:
+                    # create it
+                    generatedState = pysecrets.token_urlsafe(32)
+                    await db.oauth_states.insert_one({
+                        "user_id": user["id"],
+                        "state": generatedState
+                    })
+                    state = generatedState
+                params = {
+                    "response_type": "code",
+                    "client_id": clientID,
+                    "redirect_uri": redirectURI,
+                    "state": state
+                }
+
+                auth_url = ( "https://savvycal.com/oauth/authorize?" + urlencode(params) )
+                return {"ok": True, "status": "redirect", "provider": "savyycall", "authorization_url": auth_url}
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
             {"$set": {"status": "connected", "connected_at": now_iso()}})

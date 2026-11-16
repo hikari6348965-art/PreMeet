@@ -39,6 +39,7 @@ INTEGRATION_CATALOG = [
     {"provider": "yahoo_mail", "name": "Yahoo Mail", "category": "email", "requires_oauth": True}, 
     {"provider": "salesforce", "name": "Salesforce", "category": "Contacts", "requires_oauth": True},
     {"provider": "pipedrive", "name": "Pipedrive", "category": "Contacts", "requires_oauth": True},
+    {"provider": "savyycall", "name": "Savyy Call", "category": "calendar", "required_oauth": True}
 ]
 
 async def ensure_plans():
