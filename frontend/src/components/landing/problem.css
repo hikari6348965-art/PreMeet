@@ -1,0 +1,130 @@
+.problem-section {
+  position: relative;
+  overflow: hidden;
+  border-radius: 25px;
+  padding: 21px 9% 24px;
+  background: oklch(0.975 0.018 270);
+}
+.problem-section::before,
+.problem-section::after {
+  content: "";
+  position: absolute;
+  width: 170px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: color-mix(in oklch, oklch(0.88 0.055 270), transparent 62%);
+}
+.problem-section::before {
+  left: -88px;
+  top: 25px;
+}
+.problem-section::after {
+  right: -91px;
+  top: -106px;
+}
+.section-heading {
+  position: relative;
+  z-index: 1;
+}
+.centered-heading {
+  text-align: center;
+}
+.section-heading .eyebrow {
+  margin-bottom: 9px;
+}
+.section-heading h2 {
+  margin: 0;
+  font-size: 29px;
+  line-height: 1.2;
+  font-weight: 750;
+}
+.section-heading p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.38;
+  color: oklch(0.554 0.046 257.417);
+}
+.problem-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 17px;
+}
+.problem-item {
+  min-height: 82px;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 15px;
+  border: 1px solid color-mix(in oklch, oklch(0.88 0.055 270), transparent 46%);
+  border-radius: 15px;
+  background: color-mix(in oklch, oklch(1 0 0), transparent 8%);
+  box-shadow: 0 5px 16px color-mix(in oklch, oklch(0.19 0.055 270), transparent 96%);
+}
+.problem-item h3 {
+  margin: 1px 0 4px;
+  font-size: 14px;
+  line-height: 1.15;
+}
+.problem-item p {
+  max-width: 160px;
+  margin: 0;
+  color: oklch(0.554 0.046 257.417);
+  font-size: 12px;
+  line-height: 1.35;
+}
+.icon-disc {
+  flex: 0 0 37px;
+  width: 37px;
+  height: 37px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: oklch(0.48 0.22 265);
+  background: oklch(0.975 0.018 270);
+}
+.icon-disc svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2.4;
+}
+.dark .problem-section {
+  background: oklch(0.22 0.035 270);
+}
+.dark .problem-section::before,
+.dark .problem-section::after {
+  background: color-mix(in oklch, oklch(0.38 0.055 270), transparent 62%);
+}
+.dark .section-heading p,
+.dark .problem-item p {
+  color: oklch(0.704 0.04 256.788);
+}
+.dark .problem-item {
+  border-color: color-mix(in oklch, oklch(0.38 0.055 270), transparent 46%);
+  background: color-mix(in oklch, oklch(0.129 0.042 264.695), transparent 8%);
+  box-shadow: 0 5px 16px color-mix(in oklch, oklch(0.984 0.003 247.858), transparent 96%);
+}
+.dark .icon-disc {
+  background: oklch(0.22 0.035 270);
+}
+@media (max-width: 700px) {
+  .problem-section {
+    padding: 25px 17px;
+    border-radius: 18px;
+  }
+  .section-heading h2 {
+    font-size: 26px;
+  }
+  .problem-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .problem-item {
+    min-height: 74px;
+  }
+  .desktop-break {
+    display: none;
+  }
+}

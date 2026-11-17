@@ -1,0 +1,218 @@
+.page-width {
+  width: min(100% - 64px, 1120px);
+  margin-inline: auto;
+}
+.hero-section {
+  min-height: 440px;
+  display: grid;
+  grid-template-columns: 1.02fr 0.98fr;
+  align-items: center;
+  position: relative;
+}
+.hero-copy {
+  position: relative;
+  z-index: 1;
+  padding: 12px 0 25px 16px;
+}
+.eyebrow {
+  display: inline-block;
+  margin: 0 0 17px;
+  border-radius: 20px;
+  padding: 5px 12px;
+  background: oklch(0.975 0.018 270);
+  color: oklch(0.48 0.22 265);
+  font-size: 13px;
+  line-height: 1;
+  font-weight: 700;
+}
+.hero-eyebrow {
+  display: none;
+}
+.hero-copy h1 {
+  margin: 0 0 14px;
+  max-width: 560px;
+  color: oklch(0.19 0.055 270);
+  font-size: 49px;
+  line-height: 1.04;
+  letter-spacing: 0;
+  font-weight: 750;
+}
+.hero-copy h1 span {
+  color: oklch(0.48 0.22 265);
+}
+.hero-description {
+  max-width: 445px;
+  margin: 0 0 17px;
+  font-size: 16px;
+  line-height: 1.42;
+}
+.primary-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 42px;
+  padding: 0 23px;
+  border-radius: 999px;
+  background: oklch(0.19 0.055 270);
+  color: oklch(0.984 0.003 247.858);
+  font-size: 13px;
+  font-weight: 700;
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease;
+}
+.primary-cta:hover {
+  transform: translateY(-2px);
+  opacity: 0.9;
+}
+.trust-row {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-top: 15px;
+}
+.trust-avatars {
+  display: flex;
+  padding-left: 3px;
+}
+.trust-avatar {
+  width: 31px;
+  height: 31px;
+  margin-left: -3px;
+  display: grid;
+  place-items: center;
+  border: 2px solid oklch(1 0 0);
+  border-radius: 50%;
+  color: oklch(0.984 0.003 247.858);
+  font-size: 9px;
+  margin-right: -5px;
+  font-weight: 700;
+
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+.trust-details {
+  display: grid;
+  gap: 2px;
+  color: oklch(0.554 0.046 257.417);
+  font-size: 11px;
+}
+.trust-stars {
+  color: oklch(0.19 0.055 270);
+  font-size: 16px;
+  letter-spacing: 0;
+}
+.hero-visual {
+  align-self: stretch;
+  min-height: 425px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-halo {
+  position: absolute;
+  width: 79%;
+  aspect-ratio: 1;
+  left: 10%;
+  top: 19%;
+  border-radius: 50%;
+  background: oklch(0.975 0.018 270);
+}
+.hero-orbit {
+  position: absolute;
+  width: 105%;
+  height: 48%;
+  left: -3%;
+  top: 28%;
+  border: 1px solid oklch(0.88 0.055 270);
+  border-radius: 50%;
+  transform: rotate(-19deg);
+}
+.hero-visual img {
+  position: absolute;
+  z-index: 1;
+  height: 95%;
+  max-width: 86%;
+  object-fit: contain;
+  object-position: center bottom;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+}
+.hero-sparkle {
+  position: absolute;
+  z-index: 2;
+  right: 7%;
+  top: 12%;
+  color: oklch(0.48 0.22 265);
+  font-size: 32px;
+}
+.dark .eyebrow {
+  background: oklch(0.22 0.035 270);
+}
+.dark .hero-copy h1 {
+  color: oklch(0.984 0.003 247.858);
+}
+.dark .primary-cta,
+.dark .trust-avatar-2 {
+  background: oklch(0.929 0.013 255.508);
+}
+.dark .primary-cta,
+.dark .trust-avatar {
+  color: oklch(0.208 0.042 265.755);
+}
+.dark .trust-stars {
+  color: oklch(0.929 0.013 255.508);
+}
+.dark .trust-avatar {
+  border-color: oklch(0.129 0.042 264.695);
+}
+.dark .trust-details {
+  color: oklch(0.704 0.04 256.788);
+}
+.dark .hero-halo {
+  background: oklch(0.22 0.035 270);
+}
+.dark .hero-orbit {
+  border-color: oklch(0.38 0.055 270);
+}
+@media (max-width: 700px) {
+  .page-width {
+    width: min(100% - 34px, 1120px);
+  }
+  .hero-section {
+    min-height: initial;
+    grid-template-columns: 1fr;
+    padding-top: 32px;
+  }
+  .hero-copy {
+    padding: 0 0 4px;
+  }
+  .hero-eyebrow {
+    display: inline-block;
+    margin-bottom: 12px;
+  }
+  .hero-copy h1 {
+    font-size: clamp(38px, 10vw, 49px);
+  }
+  .hero-description {
+    font-size: 15px;
+  }
+  .hero-visual {
+    min-height: 330px;
+    margin-top: 4px;
+  }
+  .hero-visual img {
+    height: 100%;
+    max-width: 90%;
+  }
+  .hero-halo {
+    width: 83%;
+    left: 9%;
+    top: 11%;
+  }
+  .hero-orbit {
+    top: 23%;
+  }
+}

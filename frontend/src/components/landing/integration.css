@@ -1,0 +1,121 @@
+.integrations-section {
+  display: flex;
+  flex-direction: column;
+  gap: 42px;
+  padding-block: 20px 31px;
+}
+.integrations-intro .eyebrow {
+  margin-bottom: 12px;
+}
+.integrations-intro h2 {
+  max-width: 350px;
+  margin: 0 0 8px;
+  font-size: 28px;
+  line-height: 1.13;
+  font-weight: 750;
+}
+.integrations-intro p {
+  max-width: 340px;
+  margin: 0 0 15px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: oklch(0.554 0.046 257.417);
+}
+.outline-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 37px;
+  border: 1px solid oklch(0.88 0.055 270);
+  border-radius: 999px;
+  padding: 0 17px;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 160ms ease;
+  cursor: pointer;
+}
+.outline-cta:hover {
+  background: oklch(0.975 0.018 270);
+}
+.integration-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 7px;
+}
+.integration-item {
+  min-height: 185px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 10px 5px;
+  border: 1px solid oklch(0.929 0.013 255.508);
+  border-radius: 15px;
+  background: oklch(1 0 0);
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.25;
+  box-shadow: 0 4px 15px
+    color-mix(in oklch, oklch(0.19 0.055 270), transparent 97%);
+}
+.integration-mark {
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  font-size: 24px;
+  line-height: 1;
+  font-weight: 800;
+}
+.integration-icon {
+  height: 50px;
+  width: 50px;
+  margin: 10px;
+}
+.integration-more {
+  height: 50px;
+  width: 50px;
+  margin: 10px;
+}
+@media (max-width: 700px) {
+  .integrations-section {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding-block: 21px 33px;
+  }
+  .integrations-intro h2 {
+    font-size: 27px;
+  }
+  .integration-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.dark .integrations-intro p {
+  color: oklch(0.704 0.04 256.788);
+}
+.dark .outline-cta {
+  border-color: oklch(0.38 0.055 270);
+}
+.dark .outline-cta:hover,
+.dark .integration-teams {
+  background: oklch(0.22 0.035 270);
+}
+.dark .integration-grid .integration-calendar {
+  background: oklch(0.22 0.035 270);
+}
+.dark .integration-grid .integration-item {
+  border-color: oklch(1 0 0 / 10%);
+  background: oklch(0.129 0.042 264.695);
+  box-shadow: 0 4px 15px
+    color-mix(in oklch, oklch(0.984 0.003 247.858), transparent 97%);
+}
+.dark .integration-notion {
+  color: oklch(0.984 0.003 247.858);
+  border-color: oklch(0.984 0.003 247.858);
+}
+.dark .integration-zoom {
+  color: oklch(0.208 0.042 265.755);
+}
+.dark .integration-more {
+  color: oklch(0.929 0.013 255.508);
+}
