@@ -8,7 +8,7 @@ const integrations = [
     { name: "Savyy Call", short: <img src="/brand/savyy-call.png" alt="S" />, style: "icon" },
     { name: "Gmail", short: <img src="/brand/gmail.png" alt="G" />, style: "icon" },
     { name: "More Integrations", short: <img src="/brand/plus.png" alt="+" />, style: "more" },
-    { name: "Yahoo Mail", short: <img src="/brand/yahoo.png" alt="Y" />, style: "icon" },
+    { name: "Front Mail", short: <img src="/brand/front.jpg" alt="F" />, style: "icon" },
     { name: "HubSpot", short: <img src="/brand/hubspot.png" alt="H" />, style: "icon" },
     { name: "SalesForce", short: <img src="/brand/salesforce.png" alt="S" />, style: "icon" },
 ];

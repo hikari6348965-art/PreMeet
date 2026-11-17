@@ -4,6 +4,7 @@ from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 from dotenv import load_dotenv
 from stripe import client_id
+from extra import get_front_notes
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / ".env")
@@ -627,6 +628,15 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
         try:
             for t in await google_service.gmail_threads(uid, emails):
                 notes.append({"source_type": "gmail", "title": t["subject"], "created_at": t["date"], "content": f"From {t['from']}: {t['snippet']}"})
+            # For Front Integration
+            integration_data = await db.integrations.find_one({"user_id": user["id"], "provider": "front", "status": "connected"})
+            if integration_data:
+                accessToken = integration_data["access_token"]
+                refreshToken = integration_data["refresh_token"]
+
+                front_notes = await get_front_notes(accessToken, refreshToken, emails, user["id"])
+                if front_notes:
+                    notes.extend(front_notes)
         except Exception as e:
             logger.warning(f"Gmail context skipped: {e}")
     pref = await db.preferences.find_one({"user_id": uid}) or {}
@@ -1506,7 +1516,53 @@ async def initiate(provider: str, request: Request):
                     return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/login")
             else:
                 return HTTPException(status_code=404, detail="State Document Not Found")
-                
+    elif provider == "front":
+        code = request.query_params.get("code")
+        state = request.query_params.get("state")
+
+        if not code or not state:
+            return HTTPException(status_code=404, detail="Query Parameter Not Found")
+        else:
+            state_doc = await db.oauth_states.find_one({"state": state})
+            if state_doc:
+                user = await db.users.find_one({"id": ObjectId(state_doc["user_id"])})
+                if user:
+                    token_url = "https://app.frontapp.com/oauth/token"
+                    front_clientID = os.getenv("FRONT_MAIL_CLIENTID")
+                    front_client_seceret = os.getenv("FRONT_MAIL_SECERET")
+                    front_redirect_uri = os.getenv("FRONT_MAIL_REDIRECT_URI")
+                    params = {
+                        "grant_type": "authorization_code",
+                        "code": code,
+                        "client_id": front_clientID,
+                        "client_secret": front_client_seceret,
+                        "redirect_uri": front_redirect_uri
+                    }
+                    response = requests.get(url=token_url, params=params)
+                    if response.status_code == 200:
+                        responseData = response.json()
+                        access_token = responseData["access_token"]
+                        refresh_token = responseData["refresh_token"]
+
+                        # Update the integration status
+                        await db.integrations.update_one(
+                            {"user_id": user["id"], "provider": "front"},
+                            {
+                                "$set": {
+                                    "status": "connected",
+                                    "connected_at": now_iso(),
+                                    "refresh_token": refresh_token,
+                                    "access_token": access_token
+                                }
+                            }
+                        )
+                        return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/app/integrations?front=connected")
+                    else:
+                        return HTTPException(status_code=500, detail="An error occurred.")
+                else:
+                    return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/register")
+            else:
+                return HTTPException(status_code=404, detail="State Document Could Not Be Found.")            
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
     row = await db.integrations.find_one({"user_id": user["id"], "provider": provider})
@@ -1704,6 +1760,41 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
 
                 auth_url = ( "https://savvycal.com/oauth/authorize?" + urlencode(params) )
                 return {"ok": True, "status": "redirect", "provider": "savyycall", "authorization_url": auth_url}
+            elif row.get("name") == "Front Mail":
+                clientID = os.getenv("FRONT_MAIL_CLIENTID ")
+                clientSeceret = os.getenv("FRONT_MAIL_SECERET")
+
+                # Generate the state
+                existingState = db.oauth_states.find_one({"user_id": user["id"]})
+                state = ""
+                if existingState:
+                    # simply update it
+                    generatedState = pysecrets.token_urlsafe(32)
+                    await db.oauth_states.update_one(
+                        {"user_id": user["id"]},
+                        {
+                            "$set": {
+                                "state": generatedState
+                            }
+                        }
+                    )
+                    state = generatedState
+                else:
+                    # Create a new
+                    generatedState = pysecrets.token_urlsafe(32)
+                    await db.oauth_states.insert_one({
+                        "user_id": user["id"],
+                        "state": generatedState
+                    })
+                    state = generatedState
+                # Generate the url
+                params = {
+                    "response_type": "code",
+                    "client_id": clientID,
+                    "redirect_uri": clientSeceret
+                }
+                auth_url = ("https://app.frontapp.com/oauth/authorize?"+urlencode(params))
+                return {"ok": True, "status": "redirect", "provider": "front", "authorization_url": auth_url}
         await db.integrations.update_one(
             {"user_id": user["id"], "provider": provider},
             {"$set": {"status": "connected", "connected_at": now_iso()}})

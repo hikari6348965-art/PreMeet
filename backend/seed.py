@@ -35,8 +35,7 @@ INTEGRATION_CATALOG = [
     {"provider": "gmail", "name": "Gmail", "category": "email", "requires_oauth": True},
     {"provider": "hubspot", "name": "HubSpot", "category": "Contacts", "requires_oauth": True},
     {"provider": "calendly", "name": "Calendly", "category": "calendar", "requires_oauth": True},
-    # This one is to be developed before launch
-    {"provider": "yahoo_mail", "name": "Yahoo Mail", "category": "email", "requires_oauth": True}, 
+    {"provider": "front", "name": "Front Mail", "category": "email", "requires_oauth": True}, 
     {"provider": "salesforce", "name": "Salesforce", "category": "Contacts", "requires_oauth": True},
     {"provider": "pipedrive", "name": "Pipedrive", "category": "Contacts", "requires_oauth": True},
     {"provider": "savyycall", "name": "Savyy Call", "category": "calendar", "requires_oauth": True}
