@@ -130,6 +130,7 @@
   }
   .review-item {
     min-height: 100px;
+    width: 100%;
   }
 }
 .dark .reviews-intro p,

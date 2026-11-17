@@ -112,7 +112,8 @@
 @media (max-width: 700px) {
   .problem-section {
     padding: 25px 17px;
-    border-radius: 18px;
+    border-radius: 10px;
+    width: 95%;
   }
   .section-heading h2 {
     font-size: 26px;
