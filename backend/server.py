@@ -624,21 +624,22 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
                               "created_at": pc.get("updated_at", ""), "content": pc["ai"].get("summary", "")})
     emails = list(meeting.get("attendee_emails") or []) + ([contact.get("email")] if contact and contact.get("email") else [])
     gmail_row = await db.integrations.find_one({"user_id": uid, "provider": "gmail", "status": "connected"})
+    front_row = await db.integrations.find_one({"user_id": uid, "provider": "front", "status": "connected"})
     if gmail_row and emails:
         try:
             for t in await google_service.gmail_threads(uid, emails):
                 notes.append({"source_type": "gmail", "title": t["subject"], "created_at": t["date"], "content": f"From {t['from']}: {t['snippet']}"})
-            # For Front Integration
-            integration_data = await db.integrations.find_one({"user_id": user["id"], "provider": "front", "status": "connected"})
-            if integration_data:
-                accessToken = integration_data["access_token"]
-                refreshToken = integration_data["refresh_token"]
-
-                front_notes = await get_front_notes(accessToken, refreshToken, emails, user["id"])
-                if front_notes:
-                    notes.extend(front_notes)
         except Exception as e:
             logger.warning(f"Gmail context skipped: {e}")
+    if front_row and emails:
+        try:
+            accessToken = front_row["access_token"]
+            refreshToken = front_row["refresh_token"]
+            front_notes = await get_front_notes(accessToken, refreshToken, emails, user["id"])
+            if front_notes:
+                notes.extend(front_notes)
+        except Exception as e:
+            logger.warning(f"Front context skipped: {e}")
     pref = await db.preferences.find_one({"user_id": uid}) or {}
     template = payload.template or pref.get("default_template", "consultant")
     context = brief_service.build_context(clean(meeting), clean(contact) if contact else None, clean(company) if company else None, notes, [clean(c) for c in commitments])
@@ -1172,7 +1173,7 @@ async def initiate(provider: str, request: Request):
             # get the user
             state_document = await db.oauth_states.find_one({"state": state})
             if state_document:
-                user = await db.users.find_one({"_id": state_document["user_id"]})
+                user = await db.users.find_one({"_id": ObjectId(state_document["user_id"])})
                 if user:
                     PIPEDRIVE_CLIENT_ID = os.getenv("PIPEDRIVE_CLIENT_ID")
                     PIPEDRIVE_CLIENT_SECERET = os.getenv("PIPEDRIVE_CLIENT_SECERET")
@@ -1269,7 +1270,7 @@ async def initiate(provider: str, request: Request):
             # continue
             state_doc = await db.oauth_states.find_one({"state": state})
             if state_doc:
-                user = await db.users.find_one({"id": ObjectId(state_doc["user_id"])})
+                user = await db.users.find_one({"_id": ObjectId(state_doc["user_id"])})
                 clientID = os.getenv("SALESFORCE_CLIENT_ID")
                 clientSeceret = os.getenv("SALESFORCE_CLIENT_SECERET")
                 redirectURI = os.getenv("SALESFORCE_REDIRECT_URI")
@@ -1365,7 +1366,7 @@ async def initiate(provider: str, request: Request):
         else:
             state_doc = await db.oauth_states.find_one({"state": state})
             if state_doc:
-                user = await db.users.find_one({"id": ObjectId(state_doc["user_id"])})
+                user = await db.users.find_one({"_id": ObjectId(state_doc["user_id"])})
                 if user:
                     # get the tokens
                     url = "https://savvycal.com/oauth/token"
@@ -1525,7 +1526,7 @@ async def initiate(provider: str, request: Request):
         else:
             state_doc = await db.oauth_states.find_one({"state": state})
             if state_doc:
-                user = await db.users.find_one({"id": ObjectId(state_doc["user_id"])})
+                user = await db.users.find_one({"_id": ObjectId(state_doc["user_id"])})
                 if user:
                     token_url = "https://app.frontapp.com/oauth/token"
                     front_clientID = os.getenv("FRONT_MAIL_CLIENTID")
@@ -1563,6 +1564,7 @@ async def initiate(provider: str, request: Request):
                     return RedirectResponse(f"{os.getenv("FRONTEND_URL")}/register")
             else:
                 return HTTPException(status_code=404, detail="State Document Could Not Be Found.")            
+                
 @api.post("/integrations/{provider}/connect")
 async def connect_integration(provider: str, user=Depends(authmod.get_current_user)):
     row = await db.integrations.find_one({"user_id": user["id"], "provider": provider})
@@ -1671,7 +1673,7 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 if existing_state:
                     # simply update the value
                     await db.oauth_states.update_one(
-                        {"user_id": user[:id]},
+                        {"user_id": user["id"]},
                         {
                             "$set": {
                                 "state": state
@@ -1761,11 +1763,11 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 auth_url = ( "https://savvycal.com/oauth/authorize?" + urlencode(params) )
                 return {"ok": True, "status": "redirect", "provider": "savyycall", "authorization_url": auth_url}
             elif row.get("name") == "Front Mail":
-                clientID = os.getenv("FRONT_MAIL_CLIENTID ")
-                clientSeceret = os.getenv("FRONT_MAIL_SECERET")
+                clientID = os.getenv("FRONT_MAIL_CLIENTID")
+                redirectURI = os.getenv("FRONT_MAIL_REDIRECT_URI")
 
                 # Generate the state
-                existingState = db.oauth_states.find_one({"user_id": user["id"]})
+                existingState = await db.oauth_states.find_one({"user_id": user["id"]})
                 state = ""
                 if existingState:
                     # simply update it
@@ -1791,7 +1793,8 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
                 params = {
                     "response_type": "code",
                     "client_id": clientID,
-                    "redirect_uri": clientSeceret
+                    "redirect_uri": redirectURI,
+                    "state": state
                 }
                 auth_url = ("https://app.frontapp.com/oauth/authorize?"+urlencode(params))
                 return {"ok": True, "status": "redirect", "provider": "front", "authorization_url": auth_url}

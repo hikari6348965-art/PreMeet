@@ -66,7 +66,7 @@ async def ensure_user_subscription(user_id: str):
 
 async def ensure_integration_rows(user_id: str):
     for item in INTEGRATION_CATALOG:
-        existing = await db.integrations.find_one({"user_id": user_id, "provider": item["provider"]})
+        existing = await db.integrations.find_one({"user_id": user_id, "provider": item["provider"], "status": "connected"})
         if not existing:
             await db.integrations.insert_one({
                 "id": new_id(),

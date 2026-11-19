@@ -24,6 +24,7 @@ import calendar
 import resend
 
 resend_api_key = os.getenv("RESEND_API_KEY")
+resend.api_key = resend_api_key
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 _tasks = set()
@@ -57,7 +58,7 @@ async def google_callback(code: str = Query(None), state: str = Query(None), err
         return RedirectResponse(f"{frontend}?google=expired")
     try:
         tokens = await gs.exchange_code(code)
-        await gs.save_connection(row["user_id"], tokens)
+        await gs.save_connection(row["user_id"], tokens) #type: ignore
     except Exception as e:
         logger.error(f"Google token exchange failed: {e}")
         return RedirectResponse(f"{frontend}?google=error")
