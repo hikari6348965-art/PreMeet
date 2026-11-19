@@ -136,3 +136,4 @@ imageio-ffmpeg
 python-dotenv
 python-multipart
 groq
+resend
