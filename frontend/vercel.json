@@ -5,5 +5,15 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
+  ],
+  "crons": [
+    {
+      "path": "https://www.premeet.onrender.com/api/crons/meeting-reminder",
+      "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "https://www.premeet.onrender.com/api/crons/refresh-emails-cache",
+      "schedule": "0 0 * * *"
+    }
   ]
 }

@@ -1,6 +1,7 @@
 import requests
 from urllib.parse import quote
 from database import db
+from datetime import datetime
 import os
 
 def refresh_front_token(refresh_token):
@@ -118,3 +119,31 @@ async def get_front_notes(access_token, refresh_token, emails, userID):
                             )
                         })
             return notes
+
+async def get_all_users(exclusion = []):
+    # get the initial batch of users
+    exclusion_ids = []
+    users = await db.users.find({"_id": {"$nin": exclusion}}).to_list(100)
+
+    user_data_arr = []
+    while users:
+        for user in users:
+            exclusion_ids.append(user["_id"])
+            data = {
+                "email": user["email"],
+                "name": user["name"],
+                "user_id": user["_id"]
+            }
+            user_data_arr.append(data)
+        users_arr = await get_all_users(exclusion_ids)
+        user_data_arr.append(users_arr)
+    return user_data_arr
+
+def extract_date_info(string: str):
+    date = datetime.fromisoformat(string.replace("Z", "+00:00"))
+    return {
+        "day": date.day,
+        "month": date.month,
+        "year": date.year
+    }
+        

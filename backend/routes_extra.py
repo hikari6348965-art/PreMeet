@@ -17,7 +17,13 @@ import google_service as gs
 import video_service as vs
 import storage
 from notes_pdf import render_notes_pdf
+from extra import get_all_users, extract_date_info
+from datetime import datetime
+from emails import reminder_email, immediate_reminder
+import calendar
+import resend
 
+resend_api_key = os.getenv("RESEND_API_KEY")
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api")
 _tasks = set()
@@ -265,3 +271,65 @@ async def notes_pdf(meeting_id: str, user=Depends(authmod.get_current_user)):
     safe = "".join(ch for ch in (m.get("title") or "meeting") if ch.isalnum() or ch in " -_").strip()[:60] or "meeting"
     return Response(content=pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="{safe} - notes.pdf"'})
+
+DAYS_BEFORE_REMINDER = 2
+emails_send_cache = []
+
+#  === CRON JOBS API ====
+@router.get("/crons/meeting-reminder")
+async def reminder():
+    today_date = datetime.now()
+    # Get a fomatted list of all the users
+    users_data_arr_obj = await get_all_users()
+    if users_data_arr_obj:
+        for user in users_data_arr_obj:
+            # Get the closes meeting to the user
+            meetings = await db.meetings.find({"user_id": user["user_id"]}).to_list(length=None)
+            for meeting in meetings:
+                date_obj = extract_date_info(meeting["start_time"])
+                # get the closest meetings
+                if today_date.year == date_obj["year"] and today_date.month == date_obj["month"] and int(date_obj["day"] - today_date.day) <= DAYS_BEFORE_REMINDER:
+                    difference = int(date_obj["day"] - today_date.day)
+                    if difference < DAYS_BEFORE_REMINDER:
+                        # When there are still a few days left
+                        dt = datetime.fromisoformat(meeting["start_time"].replace("Z", "+00:00"))
+                        emailText = reminder_email(name=user["name"], title=meeting["title"], day=date_obj["day"], month=calendar.month_name[date_obj["month"]], time=dt.strftime("%I:%M %p"))
+                        params: resend.Emails.SendParams = {
+                            "from": "PreMeet Reminders <no-reply@premeet.ink>",
+                            "to": [user["email"]],
+                            "subject": "PreMeet - Upcoming Meeting Reminder",
+                            "text": emailText
+                        }
+                        # send the email
+                        try:
+                            if user["email"] not in emails_send_cache:
+                                resend.Emails.send(params)
+                                emails_send_cache.append(user["email"])
+                        except Exception as e:
+                            print(e)
+                    elif difference == 0:
+                        # When it is meeting day:
+                        dt = datetime.fromisoformat(meeting["start_time"].replace("Z", "+00:00"))
+                        emailText = immediate_reminder(name=user["name"], title=meeting["title"], day=date_obj["day"], month=calendar.month_name[date_obj["month"]], time=dt.strftime("%I:%M %p"))
+                        params: resend.Emails.SendParams = {
+                            "from": "PreMeet Reminders <no-reply@premeet.ink>",
+                            "to": [user["email"]],
+                            "subject": "PreMeet - Upcoming Meeting Reminder",
+                            "text": emailText
+                        }
+                        # send the email
+                        try:
+                            if user["email"] not in emails_send_cache:
+                                resend.Emails.send(params)
+                                emails_send_cache.append(user["email"])
+                        except Exception as e:
+                            print(e)
+                else:
+                    continue
+    else:
+        return {"ok": True, "status": "success", "type": "no-user"}
+
+@router.get("/crons/refresh-emails-cache")
+def reset():
+    emails_send_cache.clear()
+    return HTTPException(status_code=200, detail="Successfully reset.")
