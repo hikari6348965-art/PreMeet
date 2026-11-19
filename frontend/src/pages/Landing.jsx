@@ -7,6 +7,7 @@ import Integrations from '@/components/landing/integration';
 import Reviews from '@/components/landing/reviews';
 import FAQ from '@/components/landing/faq';
 import Footer from '@/components/landing/footer';
+import './landing-motion.css';
 
 const Landing = () => {
   return (
