@@ -13,16 +13,6 @@
   }
 }
 
-@keyframes landing-image-float {
-  0%,
-  100% {
-    transform: translate(-50%, 0);
-  }
-  50% {
-    transform: translate(-50%, -8px);
-  }
-}
-
 @keyframes landing-float {
   0%,
   100% {
@@ -77,10 +67,6 @@
 .premeet-page .hero-copy > :nth-child(4) { animation-delay: 310ms; }
 .premeet-page .hero-copy > :nth-child(5) { animation-delay: 380ms; }
 
-.premeet-page .hero-visual {
-  animation: landing-rise-in 850ms var(--landing-ease) 180ms both;
-}
-
 .premeet-page .hero-halo {
   animation: landing-float 7s ease-in-out 1s infinite;
 }
@@ -89,12 +75,12 @@
   animation: landing-orbit 36s linear infinite;
 }
 
-.premeet-page .hero-visual img {
-  animation: landing-image-float 6s ease-in-out 1.2s infinite;
-}
-
 .premeet-page .hero-sparkle {
   animation: landing-sparkle 3s ease-in-out 1.2s infinite;
+}
+
+.premeet-page .hero-sparkle-secondary {
+  animation-delay: 650ms;
 }
 
 .premeet-page .problem-item,

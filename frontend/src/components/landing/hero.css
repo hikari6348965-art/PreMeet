@@ -148,6 +148,13 @@
   color: oklch(0.48 0.22 265);
   font-size: 32px;
 }
+.hero-sparkle-secondary {
+  left: 9%;
+  top: 32%;
+  right: auto;
+  color: oklch(0.76 0.15 82);
+  font-size: 20px;
+}
 .dark .eyebrow {
   background: oklch(0.22 0.035 270);
 }

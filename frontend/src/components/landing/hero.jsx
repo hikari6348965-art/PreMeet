@@ -39,6 +39,8 @@ export default function Hero() {
                 <div className="hero-halo" />
                 <div className="hero-orbit" />
                 <span className="hero-sparkle" aria-hidden="true">✦</span>
+                <span className="hero-sparkle" aria-hidden="true" style={{ top: "5rem", right: "1.2rem" }}>✦</span>
+                <span className="hero-sparkle hero-sparkle-secondary" aria-hidden="true">✧</span>
                 <img src="/brand/premeet-founder.png" alt="PreMeet founder standing confidently in a black suit" />
             </div>
         </section>
