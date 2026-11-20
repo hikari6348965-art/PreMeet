@@ -1,18 +1,24 @@
-
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://www.premeet.onrender.com/api/:path*"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
+
   "crons": [
     {
-      "path": "https://www.premeet.onrender.com/api/crons/meeting-reminder",
+      "path": "/api/crons/meeting-reminder",
       "schedule": "*/10 * * * *"
     },
     {
-      "path": "https://www.premeet.onrender.com/api/crons/refresh-emails-cache",
+      "path": "/api/crons/refresh-emails-cache",
       "schedule": "0 0 * * *"
     }
   ]
