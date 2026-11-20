@@ -1574,7 +1574,7 @@ async def connect_integration(provider: str, user=Depends(authmod.get_current_us
         raise HTTPException(status_code=404, detail="Unknown integration")
     # get the integration limit for that user
     user_plan = await get_plan_for_user(user["id"])
-    connection_count = await db.integrations.count_documents({"user_id": user["id"]})
+    connection_count = await db.integrations.count_documents({"user_id": user["id"], "status": "connected"})
     if user_plan["plan"]["integration_limit"] >= connection_count:
         if provider in google_service.GOOGLE_PROVIDERS:
             return {"ok": True, "status": "redirect", **(await routes_extra.google_start(user))}
