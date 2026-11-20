@@ -327,6 +327,7 @@ async def reminder():
                             print(e)
                 else:
                     continue
+        return {"ok": True, "status": "success", "type": "Accomplished"}
     else:
         return {"ok": True, "status": "success", "type": "no-user"}
 
