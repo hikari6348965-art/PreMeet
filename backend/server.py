@@ -661,8 +661,10 @@ async def generate_brief_endpoint(payload: GenerateBriefInput, user=Depends(auth
         "feedback": [], "generated_at": now_iso(),
     }
     await db.briefs.insert_one(dict(brief_doc))
-    await db.meetings.update_one({"id": payload.meeting_id},
-                                 {"$set": {"status": "ready", "brief_id": brief_doc["id"]}})
+    await db.meetings.update_one(
+        {"id": payload.meeting_id},
+        {"$set": {"status": "ready", "brief_id": brief_doc["id"]}}
+    )
     # Count usage only on success
     await db.usage_records.update_one({"user_id": uid, "period": current_period()},
                                       {"$inc": {"briefs_generated": 1}, "$set": {"updated_at": now_iso()}})
